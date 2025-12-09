@@ -123,7 +123,7 @@ export const mockCourses: Course[] = [
     price: 149,
     rating: 4.7,
     totalStudents: 1200,
-    thumbnailUrl: 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=500&h=300&fit=crop',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1540960149653-14e2f2f1e5ad?w=500&h=300&fit=crop',
     isFeatured: true,
     isPublished: true,
     whatYouWillLearn: [
@@ -180,7 +180,7 @@ export const mockCourses: Course[] = [
     price: 99,
     rating: 4.4,
     totalStudents: 1500,
-    thumbnailUrl: 'https://images.unsplash.com/photo-1540575467063-9844b1e5d5d3?w=500&h=300&fit=crop',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1540960149653-14e2f2f1e5ad?w=500&h=300&fit=crop',
     isFeatured: true,
     isPublished: true,
     whatYouWillLearn: [
@@ -207,7 +207,7 @@ export const mockCourses: Course[] = [
     price: 129,
     rating: 4.5,
     totalStudents: 800,
-    thumbnailUrl: 'https://images.unsplash.com/photo-1516534775068-bb0427b1c0c8?w=500&h=300&fit=crop',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1540960149653-14e2f2f1e5ad?w=500&h=300&fit=crop',
     isFeatured: false,
     isPublished: true,
     whatYouWillLearn: [
@@ -234,7 +234,7 @@ export const mockCourses: Course[] = [
     price: 159,
     rating: 0,
     totalStudents: 0,
-    thumbnailUrl: 'https://images.unsplash.com/photo-1494783367193-149034c05e41?w=500&h=300&fit=crop',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1540960149653-14e2f2f1e5ad?w=500&h=300&fit=crop',
     isFeatured: false,
     isPublished: false,
     whatYouWillLearn: [

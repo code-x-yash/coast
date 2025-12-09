@@ -44,12 +44,25 @@ export function UserMenu({ onNavigate }: UserMenuProps) {
     switch (user.role) {
       case 'admin':
         return 'admin-dashboard'
-      case 'instructor':
+      case 'institute':
         return 'instructor-dashboard'
       case 'student':
         return 'student-dashboard'
       default:
         return 'home'
+    }
+  }
+
+  const getRoleLabel = () => {
+    switch (user.role) {
+      case 'admin':
+        return 'Platform Admin'
+      case 'institute':
+        return 'Training Institute'
+      case 'student':
+        return 'Seafarer/Student'
+      default:
+        return user.role
     }
   }
 
@@ -70,8 +83,8 @@ export function UserMenu({ onNavigate }: UserMenuProps) {
             <p className="text-xs leading-none text-muted-foreground">
               {user.email}
             </p>
-            <p className="text-xs leading-none text-muted-foreground capitalize">
-              {user.role}
+            <p className="text-xs leading-none text-primary font-medium">
+              {getRoleLabel()}
             </p>
           </div>
         </DropdownMenuLabel>

@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
-import { mockApi } from '@/api/mockApi'
-import { User } from '@/data/mock'
+import { maritimeApi, User } from '@/api/maritimeMockApi'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,7 +10,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
-import { UserCog } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { UserCog, Building2, GraduationCap, Shield } from 'lucide-react'
 
 export function RoleSwitcher() {
   const { user, switchUser } = useAuth()
@@ -19,12 +19,52 @@ export function RoleSwitcher() {
   const [isOpen, setIsOpen] = useState(false)
 
   const loadUsers = async () => {
-    const allUsers = await mockApi.listUsers()
+    const allUsers = await maritimeApi.listUsers()
     setUsers(allUsers)
   }
 
   const handleSwitch = async (userId: string) => {
     await switchUser(userId)
+    setIsOpen(false)
+  }
+
+  const getRoleIcon = (role: string) => {
+    switch (role) {
+      case 'admin':
+        return <Shield className="h-4 w-4 text-primary" />
+      case 'institute':
+        return <Building2 className="h-4 w-4 text-blue-600" />
+      case 'student':
+        return <GraduationCap className="h-4 w-4 text-green-600" />
+      default:
+        return <UserCog className="h-4 w-4" />
+    }
+  }
+
+  const getRoleBadgeColor = (role: string) => {
+    switch (role) {
+      case 'admin':
+        return 'bg-primary text-primary-foreground'
+      case 'institute':
+        return 'bg-blue-100 text-blue-700'
+      case 'student':
+        return 'bg-green-100 text-green-700'
+      default:
+        return 'bg-gray-100 text-gray-700'
+    }
+  }
+
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case 'admin':
+        return 'Platform Admin'
+      case 'institute':
+        return 'Training Institute'
+      case 'student':
+        return 'Seafarer/Student'
+      default:
+        return role
+    }
   }
 
   return (
@@ -33,36 +73,46 @@ export function RoleSwitcher() {
       if (open) loadUsers()
     }}>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2">
+        <Button variant="outline" size="sm" className="gap-2 bg-white/90 hover:bg-white border-white/30">
           <UserCog className="h-4 w-4" />
           <span className="hidden sm:inline">Switch Role</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-64">
+      <DropdownMenuContent align="end" className="w-80">
         <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-          DEV: Quick Role Switcher
+          Demo Mode: Quick Role Switching
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {users.map((u) => (
-          <DropdownMenuItem
-            key={u.id}
-            onClick={() => handleSwitch(u.id)}
-            disabled={user?.id === u.id}
-            className="cursor-pointer"
-          >
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center gap-2">
-                <span className="font-medium">{u.name}</span>
-                {user?.id === u.id && (
-                  <span className="text-xs text-primary">(current)</span>
-                )}
+        <div className="space-y-1">
+          {users.map((u) => (
+            <DropdownMenuItem
+              key={u.userid}
+              onClick={() => handleSwitch(u.userid)}
+              disabled={user?.userid === u.userid}
+              className="cursor-pointer p-3 focus:bg-muted"
+            >
+              <div className="flex items-start gap-3 w-full">
+                <div className="mt-0.5">
+                  {getRoleIcon(u.role)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-medium text-sm truncate">{u.name}</span>
+                    {user?.userid === u.userid && (
+                      <Badge variant="secondary" className="text-xs">Current</Badge>
+                    )}
+                  </div>
+                  <div className="text-xs text-muted-foreground truncate mb-1.5">
+                    {u.email}
+                  </div>
+                  <Badge className={`text-xs ${getRoleBadgeColor(u.role)}`}>
+                    {getRoleLabel(u.role)}
+                  </Badge>
+                </div>
               </div>
-              <div className="text-xs text-muted-foreground">
-                {u.email} • {u.role}
-              </div>
-            </div>
-          </DropdownMenuItem>
-        ))}
+            </DropdownMenuItem>
+          ))}
+        </div>
       </DropdownMenuContent>
     </DropdownMenu>
   )

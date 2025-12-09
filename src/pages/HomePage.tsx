@@ -205,7 +205,7 @@ export default function HomePage({ onNavigate }: HomePageProps) {
                       alt={course.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
-                    <Badge className="absolute top-4 left-4 bg-background/90 backdrop-blur">
+                    <Badge className="absolute top-4 left-4 bg-white/95 text-foreground backdrop-blur shadow-md font-medium">
                       {course.category}
                     </Badge>
                   </div>

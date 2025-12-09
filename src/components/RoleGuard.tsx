@@ -1,13 +1,14 @@
 import { ReactNode } from 'react'
 import { useAuth } from '@/hooks/useAuth'
-import { Role } from '@/data/mock'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ShieldAlert } from 'lucide-react'
 
+type MaritimeRole = 'admin' | 'institute' | 'student'
+
 interface RoleGuardProps {
   children: ReactNode
-  allowedRoles: Role[]
+  allowedRoles: MaritimeRole[]
   onNavigate?: (page: string) => void
 }
 
@@ -49,10 +50,10 @@ export function RoleGuard({ children, allowedRoles, onNavigate }: RoleGuardProps
     )
   }
 
-  if (!allowedRoles.includes(user.role)) {
-    const dashboardMap: Record<Role, string> = {
+  if (!allowedRoles.includes(user.role as MaritimeRole)) {
+    const dashboardMap: Record<MaritimeRole, string> = {
       admin: 'admin-dashboard',
-      instructor: 'instructor-dashboard',
+      institute: 'instructor-dashboard',
       student: 'student-dashboard'
     }
 
@@ -71,7 +72,7 @@ export function RoleGuard({ children, allowedRoles, onNavigate }: RoleGuardProps
               {allowedRoles.join(', ')} roles only.
             </p>
             <Button
-              onClick={() => onNavigate ? onNavigate(dashboardMap[user.role]) : window.location.href = '/'}
+              onClick={() => onNavigate ? onNavigate(dashboardMap[user.role as MaritimeRole]) : window.location.href = '/'}
               className="w-full"
             >
               Go to My Dashboard

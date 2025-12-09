@@ -91,47 +91,79 @@ export default function Navbar({ onNavigate, currentPage }: NavbarProps) {
     }
   }
 
+  const getDashboardLabel = () => {
+    if (!user) return 'Dashboard'
+    switch (user.role) {
+      case 'admin':
+        return 'Platform Admin'
+      case 'institute':
+        return 'Manage Institute'
+      case 'student':
+        return 'My Learning'
+      default:
+        return 'Dashboard'
+    }
+  }
+
+  const getDashboardPage = () => {
+    if (!user) return 'dashboard'
+    switch (user.role) {
+      case 'admin':
+        return 'admin-dashboard'
+      case 'institute':
+        return 'instructor-dashboard'
+      case 'student':
+        return 'student-dashboard'
+      default:
+        return 'dashboard'
+    }
+  }
+
   const NavLinks = ({ mobile = false }: { mobile?: boolean }) => (
     <>
-      <button
-        onClick={() => onNavigate('home')}
-        className={`${mobile ? 'text-left w-full px-4 py-2 text-foreground hover:bg-primary/20' : 'text-white drop-shadow-md'} text-sm font-medium transition-all duration-200 ${
-          currentPage === 'home' ? (mobile ? 'bg-primary/10 text-primary' : 'text-white/90 border-b-2 border-white') : 'hover:text-white/80'
-        }`}
-      >
-        Home
-      </button>
-      {mobile ? (
-        <button
-          onClick={() => onNavigate('catalog')}
-          className={`text-left w-full px-4 py-2 text-foreground hover:bg-primary/20 text-sm font-medium transition-all duration-200 ${
-            currentPage === 'catalog' ? 'bg-primary/10 text-primary' : ''
-          }`}
-        >
-          Courses
-        </button>
-      ) : (
-        <div className="relative">
+      {!user || user.role === 'student' ? (
+        <>
           <button
-            ref={coursesButtonRef}
-            onMouseEnter={() => setShowCoursesMenu(true)}
-            onClick={() => onNavigate('catalog')}
-            className={`text-white drop-shadow-md text-sm font-medium transition-all duration-200 ${
-              currentPage === 'catalog' ? 'text-white/90 border-b-2 border-white' : 'hover:text-white/80'
+            onClick={() => onNavigate('home')}
+            className={`${mobile ? 'text-left w-full px-4 py-2 text-foreground hover:bg-primary/20' : 'text-white drop-shadow-md'} text-sm font-medium transition-all duration-200 ${
+              currentPage === 'home' ? (mobile ? 'bg-primary/10 text-primary' : 'text-white/90 border-b-2 border-white') : 'hover:text-white/80'
             }`}
           >
-            Courses
+            Home
           </button>
-        </div>
-      )}
+          {mobile ? (
+            <button
+              onClick={() => onNavigate('catalog')}
+              className={`text-left w-full px-4 py-2 text-foreground hover:bg-primary/20 text-sm font-medium transition-all duration-200 ${
+                currentPage === 'catalog' ? 'bg-primary/10 text-primary' : ''
+              }`}
+            >
+              Browse Courses
+            </button>
+          ) : (
+            <div className="relative">
+              <button
+                ref={coursesButtonRef}
+                onMouseEnter={() => setShowCoursesMenu(true)}
+                onClick={() => onNavigate('catalog')}
+                className={`text-white drop-shadow-md text-sm font-medium transition-all duration-200 ${
+                  currentPage === 'catalog' ? 'text-white/90 border-b-2 border-white' : 'hover:text-white/80'
+                }`}
+              >
+                Browse Courses
+              </button>
+            </div>
+          )}
+        </>
+      ) : null}
       {user && (
         <button
-          onClick={() => onNavigate('dashboard')}
+          onClick={() => onNavigate(getDashboardPage())}
           className={`${mobile ? 'text-left w-full px-4 py-2 text-foreground hover:bg-primary/20' : 'text-white drop-shadow-md'} text-sm font-medium transition-all duration-200 ${
-            currentPage === 'dashboard' ? (mobile ? 'bg-primary/10 text-primary' : 'text-white/90 border-b-2 border-white') : 'hover:text-white/80'
+            currentPage.includes('dashboard') ? (mobile ? 'bg-primary/10 text-primary' : 'text-white/90 border-b-2 border-white') : 'hover:text-white/80'
           }`}
         >
-          My Learning
+          {getDashboardLabel()}
         </button>
       )}
     </>

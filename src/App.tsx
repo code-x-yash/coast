@@ -9,7 +9,7 @@ import CourseDetail from '@/pages/CourseDetail'
 import LearningInterface from '@/pages/LearningInterface'
 import SignIn from '@/pages/SignIn'
 import SignUpStudent from '@/pages/SignUpStudent'
-import SignUpInstructor from '@/pages/SignUpInstructor'
+import RegisterInstitute from '@/pages/RegisterInstitute'
 import StudentDashboard from '@/pages/student/StudentDashboard'
 import InstructorDashboard from '@/pages/instructor/InstructorDashboard'
 import AdminDashboard from '@/pages/admin/AdminDashboard'
@@ -23,10 +23,11 @@ type Page =
   | 'learn'
   | 'sign-in'
   | 'sign-up-student'
-  | 'sign-up-instructor'
+  | 'register-institute'
   | 'student-dashboard'
   | 'instructor-dashboard'
   | 'admin-dashboard'
+  | 'dashboard'
   | 'user-management'
   | 'course-editor'
   | 'not-found'
@@ -38,7 +39,7 @@ function AppContent() {
       switch (user.role) {
         case 'admin':
           return 'admin-dashboard'
-        case 'instructor':
+        case 'institute':
           return 'instructor-dashboard'
         case 'student':
           return 'student-dashboard'
@@ -86,8 +87,13 @@ function AppContent() {
       case 'sign-up-student':
         return <SignUpStudent onNavigate={handleNavigate} />
 
-      case 'sign-up-instructor':
-        return <SignUpInstructor onNavigate={handleNavigate} />
+      case 'register-institute':
+        return <RegisterInstitute onNavigate={handleNavigate} />
+
+      case 'dashboard':
+        if (user?.role === 'admin') return <AdminDashboard onNavigate={handleNavigate} />
+        if (user?.role === 'institute') return <InstructorDashboard onNavigate={handleNavigate} />
+        return <StudentDashboard onNavigate={handleNavigate} />
 
       case 'student-dashboard':
         return (
@@ -98,7 +104,7 @@ function AppContent() {
 
       case 'instructor-dashboard':
         return (
-          <RoleGuard allowedRoles={['instructor']} onNavigate={handleNavigate}>
+          <RoleGuard allowedRoles={['institute']} onNavigate={handleNavigate}>
             <InstructorDashboard onNavigate={handleNavigate} />
           </RoleGuard>
         )
@@ -119,7 +125,7 @@ function AppContent() {
 
       case 'course-editor':
         return (
-          <RoleGuard allowedRoles={['instructor', 'admin']} onNavigate={handleNavigate}>
+          <RoleGuard allowedRoles={['institute', 'admin']} onNavigate={handleNavigate}>
             <InstructorDashboard onNavigate={handleNavigate} />
           </RoleGuard>
         )
@@ -129,7 +135,7 @@ function AppContent() {
     }
   }
 
-  const showLayout = currentPage !== 'learn' && currentPage !== 'sign-in' && currentPage !== 'sign-up-student' && currentPage !== 'sign-up-instructor'
+  const showLayout = currentPage !== 'learn' && currentPage !== 'sign-in' && currentPage !== 'sign-up-student' && currentPage !== 'register-institute'
 
   return (
     <div className="flex flex-col min-h-screen">

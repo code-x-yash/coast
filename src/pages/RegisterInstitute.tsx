@@ -1,83 +1,332 @@
 import { useState } from 'react'
+import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Label } from '@/components/ui/label'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Textarea } from '@/components/ui/textarea'
+import { toast } from '@/hooks/use-toast'
 
-interface User {
-  id: string
-  email: string
-  name?: string
-}
-
-interface SignupProps {
+interface RegisterInstituteProps {
   onNavigate: (page: string) => void
-  onAuthSuccess: (user: User) => void
 }
 
-export default function RegisterInstitute({ onNavigate, onAuthSuccess }: SignupProps) {
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirm, setConfirm] = useState('')
+export default function RegisterInstitute({ onNavigate }: RegisterInstituteProps) {
+  const { registerInstitute, user } = useAuth()
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    password: '',
+    confirmPassword: '',
+    instituteName: '',
+    accreditation_no: '',
+    valid_from: '',
+    valid_to: '',
+    address: '',
+    city: '',
+    state: '',
+  })
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  if (user) {
+    onNavigate('dashboard')
+    return null
+  }
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setFormData(prev => ({
+      ...prev,
+      [e.target.name]: e.target.value
+    }))
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
 
-    if (!name || !email || !password || !confirm) {
-      setError('Please fill in all fields')
-      return
-    }
-    if (password !== confirm) {
+    if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match')
       return
     }
 
-    const user: User = { id: `user-${Date.now()}`, email, name }
-    localStorage.setItem('app_user', JSON.stringify(user))
-    onAuthSuccess(user)
-    onNavigate('dashboard')
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters')
+      return
+    }
+
+    if (!formData.accreditation_no) {
+      setError('Accreditation number is required')
+      return
+    }
+
+    if (!formData.valid_from || !formData.valid_to) {
+      setError('Accreditation validity dates are required')
+      return
+    }
+
+    setLoading(true)
+
+    try {
+      await registerInstitute(formData)
+      toast({
+        title: 'Registration Successful!',
+        description: 'Your institute has been registered. Awaiting admin verification.',
+      })
+      onNavigate('dashboard')
+    } catch (err: any) {
+      setError(err.message || 'Failed to register institute')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
-    <div className="min-h-screen py-12">
-      <div className="container mx-auto px-4 max-w-md">
-        <Card>
-          <CardHeader>
-            <CardTitle>Register your Institute</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="text-sm font-medium">Name of institute</label>
-                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" />
-              </div>
-              <div>
-                <label className="text-sm font-medium">Email</label>
-                <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
-              </div>
-              <div>
-                <label className="text-sm font-medium">Password</label>
-                <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
-              </div>
-              <div>
-                <label className="text-sm font-medium">Confirm Password</label>
-                <Input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="••••••••" />
-              </div>
-              {error && <p className="text-sm text-destructive">{error}</p>}
-              <Button type="submit" className="w-full">Create Account</Button>
-              <p className="text-sm text-muted-foreground text-center">
-                Already have an account? <button type="button" className="underline" onClick={() => onNavigate('login')}>Sign in</button>
-              </p>
-              <p className="text-sm text-muted-foreground text-center">
-                Are you an institute? <button type="button" className="underline" onClick={() => onNavigate('register-institute')}>Register here</button>
-              </p>
-            </form>
-          </CardContent>
-        </Card>
+    <div className="min-h-screen py-12 bg-gradient-to-br from-blue-50 via-slate-50 to-background">
+      <div className="container mx-auto px-4">
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold mb-2">Institute Registration</h1>
+            <p className="text-muted-foreground">
+              Register your maritime training institute on our platform
+            </p>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Register Training Institute</CardTitle>
+              <CardDescription>
+                Complete this form to register your institute. Your application will be reviewed by our admin team for verification.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-sm">Contact Person Details</h3>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Contact Person Name *</Label>
+                      <Input
+                        id="name"
+                        name="name"
+                        type="text"
+                        value={formData.name}
+                        onChange={handleChange}
+                        placeholder="Dr. Rajesh Kumar"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Contact Email *</Label>
+                      <Input
+                        id="email"
+                        name="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        placeholder="admin@maritimeinstitute.edu.in"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2 md:col-span-2">
+                      <Label htmlFor="phone">Contact Phone Number</Label>
+                      <Input
+                        id="phone"
+                        name="phone"
+                        type="tel"
+                        value={formData.phone}
+                        onChange={handleChange}
+                        placeholder="+91 22 2345 6789"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-sm">Institute Information</h3>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="instituteName">Institute Name *</Label>
+                      <Input
+                        id="instituteName"
+                        name="instituteName"
+                        type="text"
+                        value={formData.instituteName}
+                        onChange={handleChange}
+                        placeholder="Mumbai Maritime Training Institute"
+                        required
+                      />
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="accreditation_no">DGShipping Accreditation Number *</Label>
+                        <Input
+                          id="accreditation_no"
+                          name="accreditation_no"
+                          type="text"
+                          value={formData.accreditation_no}
+                          onChange={handleChange}
+                          placeholder="DGS-MMI-2019-001"
+                          required
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Your official DGShipping accreditation number
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-2">
+                            <Label htmlFor="valid_from">Valid From *</Label>
+                            <Input
+                              id="valid_from"
+                              name="valid_from"
+                              type="date"
+                              value={formData.valid_from}
+                              onChange={handleChange}
+                              required
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="valid_to">Valid To *</Label>
+                            <Input
+                              id="valid_to"
+                              name="valid_to"
+                              type="date"
+                              value={formData.valid_to}
+                              onChange={handleChange}
+                              required
+                            />
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Accreditation validity period
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="address">Institute Address</Label>
+                      <Textarea
+                        id="address"
+                        name="address"
+                        value={formData.address}
+                        onChange={handleChange}
+                        placeholder="Plot 45, Wadala Port Trust, Reay Road"
+                        rows={2}
+                      />
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="city">City</Label>
+                        <Input
+                          id="city"
+                          name="city"
+                          type="text"
+                          value={formData.city}
+                          onChange={handleChange}
+                          placeholder="Mumbai"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="state">State</Label>
+                        <Input
+                          id="state"
+                          name="state"
+                          type="text"
+                          value={formData.state}
+                          onChange={handleChange}
+                          placeholder="Maharashtra"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-sm">Account Security</h3>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="password">Password *</Label>
+                      <Input
+                        id="password"
+                        name="password"
+                        type="password"
+                        value={formData.password}
+                        onChange={handleChange}
+                        placeholder="••••••••"
+                        required
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Must be at least 6 characters
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="confirmPassword">Confirm Password *</Label>
+                      <Input
+                        id="confirmPassword"
+                        name="confirmPassword"
+                        type="password"
+                        value={formData.confirmPassword}
+                        onChange={handleChange}
+                        placeholder="••••••••"
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <Alert>
+                  <AlertDescription>
+                    <strong>Note:</strong> Your institute registration will be reviewed by our admin team. You will be notified once your institute is verified and approved.
+                  </AlertDescription>
+                </Alert>
+
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+
+                <Button type="submit" className="w-full" size="lg" disabled={loading}>
+                  {loading ? 'Submitting Registration...' : 'Register Institute'}
+                </Button>
+
+                <div className="text-center space-y-2 pt-4 border-t">
+                  <p className="text-sm text-muted-foreground">
+                    Already have an account?{' '}
+                    <button
+                      type="button"
+                      onClick={() => onNavigate('sign-in')}
+                      className="text-primary hover:underline font-medium"
+                    >
+                      Sign in
+                    </button>
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Are you a seafarer?{' '}
+                    <button
+                      type="button"
+                      onClick={() => onNavigate('sign-up-student')}
+                      className="text-primary hover:underline font-medium"
+                    >
+                      Register as seafarer
+                    </button>
+                  </p>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   )
 }
-

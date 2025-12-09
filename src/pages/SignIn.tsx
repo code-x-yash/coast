@@ -13,11 +13,11 @@ interface SignInProps {
 }
 
 const demoCredentials = [
-  { email: 'admin@demo.test', password: 'password', role: 'Admin', description: 'Full platform access' },
-  { email: 'instructor@demo.test', password: 'password', role: 'Instructor', description: 'Create and manage courses' },
-  { email: 'instructor2@demo.test', password: 'password', role: 'Instructor', description: 'Secondary instructor' },
-  { email: 'student@demo.test', password: 'password', role: 'Student', description: 'Enroll in courses' },
-  { email: 'student2@demo.test', password: 'password', role: 'Student', description: 'Secondary student' },
+  { email: 'admin@maritimetraining.in', password: 'hashed_password', role: 'Super Admin', description: 'Platform administration & institute verification' },
+  { email: 'admin@mumbaimaritime.edu.in', password: 'hashed_password', role: 'Institute', description: 'Mumbai Maritime Institute' },
+  { email: 'contact@chennaiacademy.in', password: 'hashed_password', role: 'Institute', description: 'Chennai Maritime Academy' },
+  { email: 'rajesh.sharma@seafarer.in', password: 'hashed_password', role: 'Seafarer', description: 'Third Officer - Browse & book courses' },
+  { email: 'priya.singh@seafarer.in', password: 'hashed_password', role: 'Seafarer', description: 'Second Officer - Browse & book courses' },
 ]
 
 export default function SignIn({ onNavigate }: SignInProps) {
@@ -76,9 +76,9 @@ export default function SignIn({ onNavigate }: SignInProps) {
       <div className="container mx-auto px-4">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold mb-2">Welcome to SeaLearn</h1>
+            <h1 className="text-3xl font-bold mb-2">Maritime Training Platform</h1>
             <p className="text-muted-foreground">
-              Sign in to access your maritime education platform
+              Sign in to access accredited maritime training courses
             </p>
           </div>
 

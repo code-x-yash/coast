@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { User } from '@/data/mock'
-import { mockAuth, AuthResponse } from '@/api/mockAuth'
+import { User } from '@/api/maritimeMockApi'
+import { maritimeAuth } from '@/api/maritimeAuth'
 
 interface AuthContextType {
   user: User | null
@@ -10,18 +10,31 @@ interface AuthContextType {
   signUpStudent: (formData: {
     name: string
     email: string
+    phone?: string
     password: string
     confirmPassword: string
+    dgshipping_id?: string
+    rank?: string
+    coc_number?: string
+    date_of_birth?: string
+    nationality?: string
   }) => Promise<void>
-  signUpInstructor: (formData: {
+  registerInstitute: (formData: {
     name: string
     email: string
+    phone?: string
     password: string
     confirmPassword: string
-    instructorTitle?: string
-    bio?: string
+    instituteName: string
+    accreditation_no: string
+    valid_from: string
+    valid_to: string
+    address?: string
+    city?: string
+    state?: string
+    documents?: any[]
   }) => Promise<void>
-  switchUser: (userId: string) => Promise<void>
+  switchUser: (userid: string) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -31,7 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const session = mockAuth.getSession()
+    const session = maritimeAuth.getSession()
     if (session) {
       setUser(session.user)
     }
@@ -39,39 +52,52 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const signIn = async (email: string, password: string) => {
-    const response = await mockAuth.signIn(email, password)
+    const response = await maritimeAuth.signIn(email, password)
     setUser(response.user)
   }
 
   const signOut = async () => {
-    await mockAuth.signOut()
+    await maritimeAuth.signOut()
     setUser(null)
   }
 
   const signUpStudent = async (formData: {
     name: string
     email: string
+    phone?: string
     password: string
     confirmPassword: string
+    dgshipping_id?: string
+    rank?: string
+    coc_number?: string
+    date_of_birth?: string
+    nationality?: string
   }) => {
-    const response = await mockAuth.signUpStudent(formData)
+    const response = await maritimeAuth.signUpStudent(formData)
     setUser(response.user)
   }
 
-  const signUpInstructor = async (formData: {
+  const registerInstitute = async (formData: {
     name: string
     email: string
+    phone?: string
     password: string
     confirmPassword: string
-    instructorTitle?: string
-    bio?: string
+    instituteName: string
+    accreditation_no: string
+    valid_from: string
+    valid_to: string
+    address?: string
+    city?: string
+    state?: string
+    documents?: any[]
   }) => {
-    const response = await mockAuth.signUpInstructor(formData)
+    const response = await maritimeAuth.registerInstitute(formData)
     setUser(response.user)
   }
 
-  const switchUser = async (userId: string) => {
-    const response = await mockAuth.switchUser(userId)
+  const switchUser = async (userid: string) => {
+    const response = await maritimeAuth.switchUser(userid)
     setUser(response.user)
     window.location.reload()
   }
@@ -84,7 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signIn,
         signOut,
         signUpStudent,
-        signUpInstructor,
+        registerInstitute,
         switchUser
       }}
     >

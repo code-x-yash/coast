@@ -5,7 +5,9 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from '@/hooks/use-toast'
+import { maritimeRanks } from '@/data/maritimeMockData'
 
 interface SignUpStudentProps {
   onNavigate: (page: string) => void
@@ -16,8 +18,14 @@ export default function SignUpStudent({ onNavigate }: SignUpStudentProps) {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    phone: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    dgshipping_id: '',
+    rank: '',
+    coc_number: '',
+    date_of_birth: '',
+    nationality: 'Indian'
   })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -31,6 +39,13 @@ export default function SignUpStudent({ onNavigate }: SignUpStudentProps) {
     setFormData(prev => ({
       ...prev,
       [e.target.name]: e.target.value
+    }))
+  }
+
+  const handleSelectChange = (name: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
     }))
   }
 
@@ -53,8 +68,8 @@ export default function SignUpStudent({ onNavigate }: SignUpStudentProps) {
     try {
       await signUpStudent(formData)
       toast({
-        title: 'Welcome to SeaLearn!',
-        description: 'Your student account has been created successfully.',
+        title: 'Welcome to Maritime Training Platform!',
+        description: 'Your seafarer account has been created successfully.',
       })
       onNavigate('student-dashboard')
     } catch (err: any) {
@@ -65,78 +80,171 @@ export default function SignUpStudent({ onNavigate }: SignUpStudentProps) {
   }
 
   return (
-    <div className="min-h-screen py-12 bg-gradient-to-br from-primary/5 via-accent/5 to-background">
+    <div className="min-h-screen py-12 bg-gradient-to-br from-blue-50 via-slate-50 to-background">
       <div className="container mx-auto px-4">
-        <div className="max-w-md mx-auto">
+        <div className="max-w-2xl mx-auto">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold mb-2">Student Registration</h1>
+            <h1 className="text-3xl font-bold mb-2">Seafarer Registration</h1>
             <p className="text-muted-foreground">
-              Create your account to start learning
+              Create your account to access maritime training courses
             </p>
           </div>
 
           <Card>
             <CardHeader>
-              <CardTitle>Create Student Account</CardTitle>
+              <CardTitle>Create Seafarer Account</CardTitle>
               <CardDescription>
-                Join thousands of maritime professionals advancing their careers
+                Register to browse and book accredited maritime training courses
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Full Name *</Label>
-                  <Input
-                    id="name"
-                    name="name"
-                    type="text"
-                    value={formData.name}
-                    onChange={handleChange}
-                    placeholder="John Doe"
-                    required
-                  />
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-sm">Personal Information</h3>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Full Name *</Label>
+                      <Input
+                        id="name"
+                        name="name"
+                        type="text"
+                        value={formData.name}
+                        onChange={handleChange}
+                        placeholder="Rajesh Kumar Sharma"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email Address *</Label>
+                      <Input
+                        id="email"
+                        name="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        placeholder="rajesh@seafarer.in"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">Phone Number</Label>
+                      <Input
+                        id="phone"
+                        name="phone"
+                        type="tel"
+                        value={formData.phone}
+                        onChange={handleChange}
+                        placeholder="+91 98765 43210"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="date_of_birth">Date of Birth</Label>
+                      <Input
+                        id="date_of_birth"
+                        name="date_of_birth"
+                        type="date"
+                        value={formData.date_of_birth}
+                        onChange={handleChange}
+                      />
+                    </div>
+                  </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email Address *</Label>
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    placeholder="you@example.com"
-                    required
-                  />
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-sm">Maritime Credentials</h3>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="dgshipping_id">DGShipping ID</Label>
+                      <Input
+                        id="dgshipping_id"
+                        name="dgshipping_id"
+                        type="text"
+                        value={formData.dgshipping_id}
+                        onChange={handleChange}
+                        placeholder="IND-2020-JAN-0089456"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Your DGShipping registration ID
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="rank">Rank / Position</Label>
+                      <Select value={formData.rank} onValueChange={(value) => handleSelectChange('rank', value)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select your rank" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {maritimeRanks.map((rank) => (
+                            <SelectItem key={rank} value={rank}>
+                              {rank}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="coc_number">Certificate of Competency (COC) Number</Label>
+                      <Input
+                        id="coc_number"
+                        name="coc_number"
+                        type="text"
+                        value={formData.coc_number}
+                        onChange={handleChange}
+                        placeholder="COC-II-0089456"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="nationality">Nationality</Label>
+                      <Input
+                        id="nationality"
+                        name="nationality"
+                        type="text"
+                        value={formData.nationality}
+                        onChange={handleChange}
+                        placeholder="Indian"
+                      />
+                    </div>
+                  </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password *</Label>
-                  <Input
-                    id="password"
-                    name="password"
-                    type="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    placeholder="••••••••"
-                    required
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Must be at least 6 characters
-                  </p>
-                </div>
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-sm">Account Security</h3>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="password">Password *</Label>
+                      <Input
+                        id="password"
+                        name="password"
+                        type="password"
+                        value={formData.password}
+                        onChange={handleChange}
+                        placeholder="••••••••"
+                        required
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Must be at least 6 characters
+                      </p>
+                    </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirm Password *</Label>
-                  <Input
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    type="password"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    placeholder="••••••••"
-                    required
-                  />
+                    <div className="space-y-2">
+                      <Label htmlFor="confirmPassword">Confirm Password *</Label>
+                      <Input
+                        id="confirmPassword"
+                        name="confirmPassword"
+                        type="password"
+                        value={formData.confirmPassword}
+                        onChange={handleChange}
+                        placeholder="••••••••"
+                        required
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 {error && (
@@ -145,8 +253,8 @@ export default function SignUpStudent({ onNavigate }: SignUpStudentProps) {
                   </Alert>
                 )}
 
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? 'Creating Account...' : 'Create Student Account'}
+                <Button type="submit" className="w-full" size="lg" disabled={loading}>
+                  {loading ? 'Creating Account...' : 'Create Seafarer Account'}
                 </Button>
 
                 <div className="text-center space-y-2 pt-4 border-t">
@@ -161,13 +269,13 @@ export default function SignUpStudent({ onNavigate }: SignUpStudentProps) {
                     </button>
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    Are you an instructor?{' '}
+                    Representing a training institute?{' '}
                     <button
                       type="button"
-                      onClick={() => onNavigate('sign-up-instructor')}
+                      onClick={() => onNavigate('register-institute')}
                       className="text-primary hover:underline font-medium"
                     >
-                      Register here
+                      Register your institute
                     </button>
                   </p>
                 </div>

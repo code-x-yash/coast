@@ -73,7 +73,7 @@ export function RoleSwitcher() {
       if (open) loadUsers()
     }}>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2 bg-white/90 hover:bg-white border-white/30">
+        <Button variant="outline" size="sm" className="gap-2 bg-white/90 hover:bg-white hover:text-dark border-white/30">
           <UserCog className="h-4 w-4" />
           <span className="hidden sm:inline">Switch Role</span>
         </Button>
@@ -89,7 +89,7 @@ export function RoleSwitcher() {
               key={u.userid}
               onClick={() => handleSwitch(u.userid)}
               disabled={user?.userid === u.userid}
-              className="cursor-pointer p-3 focus:bg-muted"
+                  className="cursor-pointer p-3 focus:bg-muted focus:text-dark"
             >
               <div className="flex items-start gap-3 w-full">
                 <div className="mt-0.5">

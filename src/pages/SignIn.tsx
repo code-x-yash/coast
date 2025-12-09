@@ -141,10 +141,10 @@ export default function SignIn({ onNavigate }: SignInProps) {
                         type="button"
                         variant="outline"
                         size="sm"
-                        onClick={() => onNavigate('sign-up-instructor')}
+                        onClick={() => onNavigate('register-institute')}
                         className="flex-1"
                       >
-                        Instructor Signup
+                        Institute Signup
                       </Button>
                     </div>
                   </div>

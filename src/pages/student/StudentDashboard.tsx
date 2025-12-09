@@ -29,6 +29,8 @@ export default function StudentDashboard({ onNavigate }: StudentDashboardProps) 
   const [filteredCourses, setFilteredCourses] = useState<CourseWithDetails[]>([])
   const [loading, setLoading] = useState(true)
 
+  const ALL_SENTINEL = '__all__' // sentinel value used for "All" items to avoid empty-string SelectItem
+
   const [searchQuery, setSearchQuery] = useState('')
   const [cityFilter, setCityFilter] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
@@ -222,36 +224,36 @@ export default function StudentDashboard({ onNavigate }: StudentDashboardProps) 
                     className="md:col-span-4"
                   />
 
-                  <Select value={cityFilter} onValueChange={setCityFilter}>
+                  <Select value={cityFilter} onValueChange={(v) => setCityFilter(v === ALL_SENTINEL ? '' : v)}>
                     <SelectTrigger>
                       <SelectValue placeholder="All Cities" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Cities</SelectItem>
+                      <SelectItem value={ALL_SENTINEL}>All Cities</SelectItem>
                       {cities.map(city => (
                         <SelectItem key={city} value={city as string}>{city}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
 
-                  <Select value={typeFilter} onValueChange={setTypeFilter}>
+                  <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v === ALL_SENTINEL ? '' : v)}>
                     <SelectTrigger>
                       <SelectValue placeholder="All Types" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Types</SelectItem>
+                      <SelectItem value={ALL_SENTINEL}>All Types</SelectItem>
                       {courseTypes.map(type => (
                         <SelectItem key={type} value={type}>{type}</SelectItem>
                       ))}
                     </SelectContent>
-                  </Select>
+                  </Select>     
 
-                  <Select value={modeFilter} onValueChange={setModeFilter}>
+                  <Select value={modeFilter} onValueChange={(v) => setModeFilter(v === ALL_SENTINEL ? '' : v)}>
                     <SelectTrigger>
                       <SelectValue placeholder="All Modes" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Modes</SelectItem>
+                      <SelectItem value={ALL_SENTINEL}>All Modes</SelectItem>
                       {courseModes.map(mode => (
                         <SelectItem key={mode} value={mode}>
                           {mode.charAt(0).toUpperCase() + mode.slice(1)}
@@ -349,7 +351,7 @@ export default function StudentDashboard({ onNavigate }: StudentDashboardProps) 
                               {batch.seats_booked >= batch.seats_total ? 'Full' : 'Book Now'}
                             </Button>
                           </div>
-                        ))}
+                        ))} 
                       </div>
                     )}
                   </CardContent>

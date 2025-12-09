@@ -568,7 +568,6 @@ export const maritimeApi = {
   async getAnalytics() {
     await delay(getRandomDelay());
     const db = getDatabase();
-
     return {
       totalInstitutes: db.institutes.length,
       verifiedInstitutes: db.institutes.filter(i => i.verified_status === 'verified').length,
@@ -653,7 +652,7 @@ export const maritimeApi = {
   async getReactivationRequestByInstId(instid: string): Promise<ReactivationRequest | null> {
     await delay(getRandomDelay());
     const db = getDatabase();
-    return db.reactivationRequests.find(r => r.instid === instid && r.status === 'pending') || null;
+      return db.reactivationRequests?.find(r => r.instid === instid && r.status === 'pending') || null;
   },
 
   async processReactivationRequest(

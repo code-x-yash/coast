@@ -3,26 +3,19 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Separator } from '@/components/ui/separator'
-import { findCourse, listLessonsForCourse, type Course, type Lesson } from '@/data/mock'
+import { mockApi } from '@/api/mockApi'
+import { useAuth } from '@/hooks/useAuth'
+import { type Course, type Lesson, type Enrollment } from '@/data/mock'
 import { CheckCircle2, Circle, ChevronLeft, ChevronRight, ArrowLeft, Play } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-
-
-// Use Course and Lesson types from mock data
-
-interface Enrollment {
-  id: string
-  progress: number
-  completedLessons: string
-}
 
 interface LearningInterfaceProps {
   courseId: string
   onNavigate: (page: string, courseId?: string) => void
-  user: { id: string; email: string } | null
 }
 
-export default function LearningInterface({ courseId, onNavigate, user }: LearningInterfaceProps) {
+export default function LearningInterface({ courseId, onNavigate }: LearningInterfaceProps) {
+  const { user } = useAuth()
   const [course, setCourse] = useState<Course | null>(null)
   const [lessons, setLessons] = useState<Lesson[]>([])
   const [currentLessonIndex, setCurrentLessonIndex] = useState(0)
@@ -40,20 +33,18 @@ export default function LearningInterface({ courseId, onNavigate, user }: Learni
   const loadLearningData = async () => {
     if (!user) return
 
+    setIsLoading(true)
     try {
-      const courseData = findCourse(courseId)
+      const courseData = await mockApi.findCourse(courseId)
       if (courseData) setCourse(courseData)
-      const lessonsData = listLessonsForCourse(courseId)
+
+      const lessonsData = await mockApi.listLessonsForCourse(courseId)
       setLessons(lessonsData)
 
-      const raw = localStorage.getItem('enrollments')
-      const map = raw ? JSON.parse(raw) : {}
-      const list: any[] = map[user.id] || []
-      const enr = list.find((e) => e.courseId === courseId) || null
-      if (enr) {
-        setEnrollment(enr)
-        const completed = JSON.parse(enr.completedLessons || '[]')
-        setCompletedLessons(completed)
+      const enrollmentData = await mockApi.findEnrollmentByUserCourse(user.id, courseId)
+      if (enrollmentData) {
+        setEnrollment(enrollmentData)
+        setCompletedLessons(enrollmentData.completedLessons || [])
       }
     } catch (error) {
       console.error('Failed to load learning data:', error)
@@ -68,25 +59,14 @@ export default function LearningInterface({ courseId, onNavigate, user }: Learni
     const currentLesson = lessons[currentLessonIndex]
     if (!currentLesson) return
 
-    const updatedCompleted = [...new Set([...completedLessons, currentLesson.id])]
-    const progress = Math.round((updatedCompleted.length / lessons.length) * 100)
-
     try {
-      const raw = localStorage.getItem('enrollments')
-      const map = raw ? JSON.parse(raw) : {}
-      const list: any[] = map[user.id] || []
-      const idx = list.findIndex((e) => e.id === enrollment.id)
-      const updated = { ...enrollment, completedLessons: JSON.stringify(updatedCompleted), progress, lastAccessed: Date.now() }
-      if (idx >= 0) list[idx] = updated
-      map[user.id] = list
-      localStorage.setItem('enrollments', JSON.stringify(map))
-
+      const updated = await mockApi.markLessonComplete(enrollment.id, currentLesson.id)
       setEnrollment(updated)
-      setCompletedLessons(updatedCompleted)
-      
+      setCompletedLessons(updated.completedLessons || [])
+
       toast({
         title: 'Lesson completed!',
-        description: `Progress: ${progress}%`,
+        description: `Progress: ${updated.progress}%`,
       })
 
       if (currentLessonIndex < lessons.length - 1) {

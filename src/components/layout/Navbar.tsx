@@ -1,21 +1,15 @@
 import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Search, Menu, X, BookOpen, User, LogOut, ChevronRight, Anchor, Ship, Compass } from 'lucide-react'
+import { Search, Menu, BookOpen, ChevronRight, Anchor, Ship, Compass } from 'lucide-react'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+import { useAuth } from '@/hooks/useAuth'
+import { UserMenu } from '@/components/UserMenu'
+import { RoleSwitcher } from '@/components/RoleSwitcher'
 
 interface NavbarProps {
   onNavigate: (page: string) => void
   currentPage: string
-  user: { id: string; email: string; name?: string } | null
-  onLogout: () => void
 }
 
 // Merchant Navy Course Categories with Specializations
@@ -62,7 +56,8 @@ const courseCategories = [
   }
 ]
 
-export default function Navbar({ onNavigate, currentPage, user, onLogout }: NavbarProps) {
+export default function Navbar({ onNavigate, currentPage }: NavbarProps) {
+  const { user } = useAuth()
   const [searchQuery, setSearchQuery] = useState('')
   const [showCoursesMenu, setShowCoursesMenu] = useState(false)
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
@@ -308,34 +303,16 @@ export default function Navbar({ onNavigate, currentPage, user, onLogout }: Navb
           {/* Auth Buttons */}
           <div className="flex items-center gap-3">
             {user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="rounded-full text-white hover:bg-white/20">
-                    <User className="h-5 w-5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-64">
-                  <div className="px-2 py-2">
-                    <p className="text-sm font-medium">{user.email}</p>
-                  </div>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => onNavigate('dashboard')}>
-                    <BookOpen className="mr-2 h-4 w-4" />
-                    My Learning
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={onLogout}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Sign Out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <>
+                <RoleSwitcher />
+                <UserMenu onNavigate={onNavigate} />
+              </>
             ) : (
               <>
-                <Button variant="ghost" onClick={() => onNavigate('login')} className="hidden sm:inline-flex text-white hover:bg-white/20">
+                <Button variant="ghost" onClick={() => onNavigate('sign-in')} className="hidden sm:inline-flex text-white hover:bg-white/20">
                   Sign In
                 </Button>
-                <Button onClick={() => onNavigate('signup')} className="bg-white text-primary hover:bg-white/90">
+                <Button onClick={() => onNavigate('sign-up-student')} className="bg-white text-primary hover:bg-white/90">
                   Get Started
                 </Button>
               </>

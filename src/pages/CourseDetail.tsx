@@ -4,20 +4,19 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
-import { findCourse, listLessonsForCourse, type Course, type Lesson } from '@/data/mock'
+import { mockApi } from '@/api/mockApi'
+import { useAuth } from '@/hooks/useAuth'
+import { type Course, type Lesson } from '@/data/mock'
 import { Star, Clock, Users, Award, CheckCircle2, Play, Lock, ArrowLeft } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-
-
-// Using types from mock data to keep shapes consistent
 
 interface CourseDetailProps {
   courseId: string
   onNavigate: (page: string, courseId?: string) => void
-  user: { id: string; email: string } | null
 }
 
-export default function CourseDetail({ courseId, onNavigate, user }: CourseDetailProps) {
+export default function CourseDetail({ courseId, onNavigate }: CourseDetailProps) {
+  const { user } = useAuth()
   const [course, setCourse] = useState<Course | null>(null)
   const [lessons, setLessons] = useState<Lesson[]>([])
   const [isEnrolled, setIsEnrolled] = useState(false)
@@ -29,19 +28,17 @@ export default function CourseDetail({ courseId, onNavigate, user }: CourseDetai
   }, [courseId, user])
 
   const loadCourseData = async () => {
+    setIsLoading(true)
     try {
-      const courseData = findCourse(courseId)
+      const courseData = await mockApi.findCourse(courseId)
       if (courseData) setCourse(courseData)
-      const lessonsData = listLessonsForCourse(courseId)
+
+      const lessonsData = await mockApi.listLessonsForCourse(courseId)
       setLessons(lessonsData)
 
       if (user) {
-        try {
-          const raw = localStorage.getItem('enrollments')
-          const enrollments = raw ? JSON.parse(raw) : {}
-          const userEnrolls = enrollments[user.id] || []
-          setIsEnrolled(userEnrolls.some((e: any) => e.courseId === courseId))
-        } catch {}
+        const enrollment = await mockApi.findEnrollmentByUserCourse(user.id, courseId)
+        setIsEnrolled(!!enrollment)
       }
     } catch (error) {
       console.error('Failed to load course:', error)
@@ -52,26 +49,12 @@ export default function CourseDetail({ courseId, onNavigate, user }: CourseDetai
 
   const handleEnroll = async () => {
     if (!user) {
-      onNavigate('login')
+      onNavigate('sign-in')
       return
     }
 
     try {
-      const raw = localStorage.getItem('enrollments')
-      const enrollments = raw ? JSON.parse(raw) : {}
-      const userEnrolls = enrollments[user.id] || []
-      const newEnrollment = {
-        id: `enroll-${Date.now()}`,
-        userId: user.id,
-        courseId,
-        progress: 0,
-        completedLessons: '[]',
-        enrolledAt: Date.now(),
-        lastAccessed: Date.now()
-      }
-      enrollments[user.id] = [newEnrollment, ...userEnrolls]
-      localStorage.setItem('enrollments', JSON.stringify(enrollments))
-
+      await mockApi.enrollStudent(user.id, courseId)
       setIsEnrolled(true)
       toast({
         title: 'Successfully enrolled!',
@@ -110,8 +93,8 @@ export default function CourseDetail({ courseId, onNavigate, user }: CourseDetai
     )
   }
 
-  const whatYouWillLearn = course.whatYouWillLearn ? JSON.parse(course.whatYouWillLearn) : []
-  const requirements = course.requirements ? JSON.parse(course.requirements) : []
+  const whatYouWillLearn = course.whatYouWillLearn || []
+  const requirements = course.requirements || []
   const totalDuration = lessons.reduce((sum, lesson) => sum + lesson.durationMinutes, 0)
 
   return (

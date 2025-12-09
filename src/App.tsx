@@ -1,31 +1,54 @@
 import { useState } from 'react'
+import { AuthProvider, useAuth } from '@/hooks/useAuth'
+import { RoleGuard } from '@/components/RoleGuard'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import HomePage from '@/pages/HomePage'
 import CourseCatalog from '@/pages/CourseCatalog'
 import CourseDetail from '@/pages/CourseDetail'
 import LearningInterface from '@/pages/LearningInterface'
-import Dashboard from '@/pages/Dashboard'
-import Login from '@/pages/Login'
-import Signup from '@/pages/Signup'
-import RegisterInstitute from '@/pages/RegisterInstitute'
+import SignIn from '@/pages/SignIn'
+import SignUpStudent from '@/pages/SignUpStudent'
+import SignUpInstructor from '@/pages/SignUpInstructor'
+import StudentDashboard from '@/pages/student/StudentDashboard'
+import InstructorDashboard from '@/pages/instructor/InstructorDashboard'
+import AdminDashboard from '@/pages/admin/AdminDashboard'
+import NotFound from '@/pages/NotFound'
 import { Toaster } from '@/components/ui/toaster'
 
-type Page = 'home' | 'catalog' | 'course' | 'learn' | 'dashboard' | 'login' | 'signup' | 'register-institute'
+type Page =
+  | 'home'
+  | 'catalog'
+  | 'course'
+  | 'learn'
+  | 'sign-in'
+  | 'sign-up-student'
+  | 'sign-up-instructor'
+  | 'student-dashboard'
+  | 'instructor-dashboard'
+  | 'admin-dashboard'
+  | 'user-management'
+  | 'course-editor'
+  | 'not-found'
 
-type User = { id: string; email: string; name?: string } | null
-
-function App() {
-  const [currentPage, setCurrentPage] = useState<Page>('home')
-  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null)
-  const [user, setUser] = useState<User>(() => {
-    try {
-      const raw = localStorage.getItem('app_user')
-      return raw ? JSON.parse(raw) : null
-    } catch {
-      return null
+function AppContent() {
+  const { user } = useAuth()
+  const [currentPage, setCurrentPage] = useState<Page>(() => {
+    if (user) {
+      switch (user.role) {
+        case 'admin':
+          return 'admin-dashboard'
+        case 'instructor':
+          return 'instructor-dashboard'
+        case 'student':
+          return 'student-dashboard'
+        default:
+          return 'home'
+      }
     }
+    return 'home'
   })
+  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null)
 
   const handleNavigate = (page: string, courseId?: string) => {
     setCurrentPage(page as Page)
@@ -39,38 +62,78 @@ function App() {
     switch (currentPage) {
       case 'home':
         return <HomePage onNavigate={handleNavigate} />
+
       case 'catalog':
         return <CourseCatalog onNavigate={handleNavigate} />
+
       case 'course':
         return selectedCourseId ? (
-          <CourseDetail courseId={selectedCourseId} onNavigate={handleNavigate} user={user} />
+          <CourseDetail courseId={selectedCourseId} onNavigate={handleNavigate} />
         ) : (
           <CourseCatalog onNavigate={handleNavigate} />
         )
+
       case 'learn':
         return selectedCourseId ? (
-          <LearningInterface courseId={selectedCourseId} onNavigate={handleNavigate} user={user} />
+          <LearningInterface courseId={selectedCourseId} onNavigate={handleNavigate} />
         ) : (
-          <Dashboard onNavigate={handleNavigate} user={user} />
+          <StudentDashboard onNavigate={handleNavigate} />
         )
-      case 'dashboard':
-        return <Dashboard onNavigate={handleNavigate} user={user} />
-      case 'login':
-        return <Login onNavigate={handleNavigate} onAuthSuccess={(u) => setUser(u)} />
-      case 'signup':
-            return <Signup onNavigate={handleNavigate} onAuthSuccess={(u) => setUser(u)} />
-      case 'register-institute':
-        return <RegisterInstitute onNavigate={handleNavigate} onAuthSuccess={(u) => setUser(u)} />
+
+      case 'sign-in':
+        return <SignIn onNavigate={handleNavigate} />
+
+      case 'sign-up-student':
+        return <SignUpStudent onNavigate={handleNavigate} />
+
+      case 'sign-up-instructor':
+        return <SignUpInstructor onNavigate={handleNavigate} />
+
+      case 'student-dashboard':
+        return (
+          <RoleGuard allowedRoles={['student']} onNavigate={handleNavigate}>
+            <StudentDashboard onNavigate={handleNavigate} />
+          </RoleGuard>
+        )
+
+      case 'instructor-dashboard':
+        return (
+          <RoleGuard allowedRoles={['instructor']} onNavigate={handleNavigate}>
+            <InstructorDashboard onNavigate={handleNavigate} />
+          </RoleGuard>
+        )
+
+      case 'admin-dashboard':
+        return (
+          <RoleGuard allowedRoles={['admin']} onNavigate={handleNavigate}>
+            <AdminDashboard onNavigate={handleNavigate} />
+          </RoleGuard>
+        )
+
+      case 'user-management':
+        return (
+          <RoleGuard allowedRoles={['admin']} onNavigate={handleNavigate}>
+            <AdminDashboard onNavigate={handleNavigate} />
+          </RoleGuard>
+        )
+
+      case 'course-editor':
+        return (
+          <RoleGuard allowedRoles={['instructor', 'admin']} onNavigate={handleNavigate}>
+            <InstructorDashboard onNavigate={handleNavigate} />
+          </RoleGuard>
+        )
+
       default:
-        return <HomePage onNavigate={handleNavigate} />
+        return <NotFound onNavigate={handleNavigate} />
     }
   }
 
-  const showLayout = currentPage !== 'learn'
+  const showLayout = currentPage !== 'learn' && currentPage !== 'sign-in' && currentPage !== 'sign-up-student' && currentPage !== 'sign-up-instructor'
 
   return (
     <div className="flex flex-col min-h-screen">
-      {showLayout && <Navbar onNavigate={handleNavigate} currentPage={currentPage} user={user} onLogout={() => { localStorage.removeItem('app_user'); setUser(null); }} />}
+      {showLayout && <Navbar onNavigate={handleNavigate} currentPage={currentPage} />}
       <main className={showLayout ? 'flex-1' : ''}>
         {renderPage()}
       </main>
@@ -80,4 +143,12 @@ function App() {
   )
 }
 
-export default App 
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  )
+}
+
+export default App

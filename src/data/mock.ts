@@ -123,7 +123,7 @@ export const mockCourses: Course[] = [
     price: 149,
     rating: 4.7,
     totalStudents: 1200,
-    thumbnailUrl: 'https://images.unsplash.com/photo-1540960149653-14e2f2f1e5ad?w=500&h=300&fit=crop',
+    thumbnailUrl: 'https://cdn.pixabay.com/photo/2019/11/30/13/45/oil-industry-4663282_1280.jpg',
     isFeatured: true,
     isPublished: true,
     whatYouWillLearn: [
@@ -152,7 +152,7 @@ export const mockCourses: Course[] = [
     price: 199,
     rating: 4.6,
     totalStudents: 950,
-    thumbnailUrl: 'https://images.unsplash.com/photo-1540960149653-14e2f2f1e5ad?w=500&h=300&fit=crop',
+    thumbnailUrl: 'https://cdn.pixabay.com/photo/2019/11/30/13/45/oil-industry-4663282_1280.jpg',
     isFeatured: true,
     isPublished: true,
     whatYouWillLearn: [
@@ -180,7 +180,7 @@ export const mockCourses: Course[] = [
     price: 99,
     rating: 4.4,
     totalStudents: 1500,
-    thumbnailUrl: 'https://images.unsplash.com/photo-1540960149653-14e2f2f1e5ad?w=500&h=300&fit=crop',
+    thumbnailUrl: 'https://cdn.pixabay.com/photo/2019/11/30/13/45/oil-industry-4663282_1280.jpg',
     isFeatured: true,
     isPublished: true,
     whatYouWillLearn: [
@@ -207,7 +207,7 @@ export const mockCourses: Course[] = [
     price: 129,
     rating: 4.5,
     totalStudents: 800,
-    thumbnailUrl: 'https://images.unsplash.com/photo-1540960149653-14e2f2f1e5ad?w=500&h=300&fit=crop',
+    thumbnailUrl: 'https://cdn.pixabay.com/photo/2019/11/30/13/45/oil-industry-4663282_1280.jpg',
     isFeatured: false,
     isPublished: true,
     whatYouWillLearn: [
@@ -234,7 +234,7 @@ export const mockCourses: Course[] = [
     price: 159,
     rating: 0,
     totalStudents: 0,
-    thumbnailUrl: 'https://images.unsplash.com/photo-1540960149653-14e2f2f1e5ad?w=500&h=300&fit=crop',
+    thumbnailUrl: 'https://cdn.pixabay.com/photo/2019/11/30/13/45/oil-industry-4663282_1280.jpg',
     isFeatured: false,
     isPublished: false,
     whatYouWillLearn: [

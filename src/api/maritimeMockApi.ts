@@ -121,6 +121,25 @@ export interface Payment {
   created_at?: string;
 }
 
+export interface ReactivationRequest {
+  requestid: string;
+  instid: string;
+  accreditation_no: string;
+  valid_from: string;
+  valid_to: string;
+  contact_email?: string;
+  contact_phone?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  documents?: any[];
+  status: 'pending' | 'approved' | 'rejected';
+  reason?: string;
+  submitted_at: string;
+  reviewed_at?: string;
+  reviewed_by?: string;
+}
+
 interface MaritimeDatabase {
   users: User[];
   institutes: Institute[];
@@ -130,6 +149,7 @@ interface MaritimeDatabase {
   bookings: Booking[];
   certificates: Certificate[];
   payments: Payment[];
+  reactivationRequests: ReactivationRequest[];
 }
 
 const getDatabase = (): MaritimeDatabase => {
@@ -150,6 +170,7 @@ const getDatabase = (): MaritimeDatabase => {
     bookings: [...mockBookings],
     certificates: [...mockCertificates],
     payments: [...mockPayments],
+    reactivationRequests: [],
   };
 };
 
@@ -552,13 +573,133 @@ export const maritimeApi = {
       totalInstitutes: db.institutes.length,
       verifiedInstitutes: db.institutes.filter(i => i.verified_status === 'verified').length,
       pendingInstitutes: db.institutes.filter(i => i.verified_status === 'pending').length,
-      totalCourses: db.courses.filter(c => c.status === 'active').length,
+      rejectedInstitutes: db.institutes.filter(i => i.verified_status === 'rejected').length,
+      activeCourses: db.courses.filter(c => c.status === 'active').length,
+      totalCourses: db.courses.length,
+      avgCourseFee: db.courses.length > 0 ? db.courses.reduce((sum, c) => sum + c.fees, 0) / db.courses.length : 0,
       totalStudents: db.students.length,
       totalBookings: db.bookings.length,
       completedBookings: db.bookings.filter(b => b.payment_status === 'completed').length,
+      pendingBookings: db.bookings.filter(b => b.payment_status === 'pending').length,
       totalRevenue: db.payments.filter(p => p.status === 'success').reduce((sum, p) => sum + p.amount, 0),
+      totalCertificates: db.certificates.length,
       certificatesIssued: db.certificates.length,
       certificatesUploaded: db.certificates.filter(c => c.dgshipping_uploaded).length,
     };
+  },
+
+  isInstituteExpired(institute: Institute): boolean {
+    const validTo = new Date(institute.valid_to);
+    const today = new Date();
+    return validTo < today;
+  },
+
+  async createReactivationRequest(requestData: {
+    instid: string;
+    accreditation_no: string;
+    valid_from: string;
+    valid_to: string;
+    contact_email?: string;
+    contact_phone?: string;
+    address?: string;
+    city?: string;
+    state?: string;
+    documents?: any[];
+    reason?: string;
+  }): Promise<ReactivationRequest> {
+    await delay(getRandomDelay());
+    const db = getDatabase();
+
+    const existingPending = db.reactivationRequests.find(
+      r => r.instid === requestData.instid && r.status === 'pending'
+    );
+
+    if (existingPending) {
+      throw new Error('A reactivation request is already pending for this institute');
+    }
+
+    const newRequest: ReactivationRequest = {
+      requestid: `req-${Date.now()}`,
+      instid: requestData.instid,
+      accreditation_no: requestData.accreditation_no,
+      valid_from: requestData.valid_from,
+      valid_to: requestData.valid_to,
+      contact_email: requestData.contact_email,
+      contact_phone: requestData.contact_phone,
+      address: requestData.address,
+      city: requestData.city,
+      state: requestData.state,
+      documents: requestData.documents || [],
+      status: 'pending',
+      reason: requestData.reason,
+      submitted_at: new Date().toISOString(),
+    };
+
+    db.reactivationRequests.push(newRequest);
+    saveDatabase(db);
+    return newRequest;
+  },
+
+  async listReactivationRequests(status?: 'pending' | 'approved' | 'rejected'): Promise<ReactivationRequest[]> {
+    await delay(getRandomDelay());
+    const db = getDatabase();
+
+    if (status) {
+      return db.reactivationRequests.filter(r => r.status === status);
+    }
+    return db.reactivationRequests;
+  },
+
+  async getReactivationRequestByInstId(instid: string): Promise<ReactivationRequest | null> {
+    await delay(getRandomDelay());
+    const db = getDatabase();
+    return db.reactivationRequests.find(r => r.instid === instid && r.status === 'pending') || null;
+  },
+
+  async processReactivationRequest(
+    requestid: string,
+    action: 'approve' | 'reject',
+    adminUserid?: string
+  ): Promise<void> {
+    await delay(getRandomDelay());
+    const db = getDatabase();
+
+    const request = db.reactivationRequests.find(r => r.requestid === requestid);
+    if (!request) {
+      throw new Error('Reactivation request not found');
+    }
+
+    if (request.status !== 'pending') {
+      throw new Error('Request has already been processed');
+    }
+
+    if (action === 'approve') {
+      const institute = db.institutes.find(i => i.instid === request.instid);
+      if (!institute) {
+        throw new Error('Institute not found');
+      }
+
+      institute.accreditation_no = request.accreditation_no;
+      institute.valid_from = request.valid_from;
+      institute.valid_to = request.valid_to;
+
+      if (request.contact_email) institute.contact_email = request.contact_email;
+      if (request.contact_phone) institute.contact_phone = request.contact_phone;
+      if (request.address) institute.address = request.address;
+      if (request.city) institute.city = request.city;
+      if (request.state) institute.state = request.state;
+      if (request.documents) institute.documents = request.documents;
+
+      institute.verified_status = 'verified';
+
+      request.status = 'approved';
+    } else {
+      request.status = 'rejected';
+    }
+
+    request.reviewed_at = new Date().toISOString();
+    request.reviewed_by = adminUserid;
+
+    saveDatabase(db);
   },
 };

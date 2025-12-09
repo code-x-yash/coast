@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
-import { maritimeApi, Course, Batch, Institute, Booking, Certificate } from '@/api/maritimeMockApi'
+import { maritimeApi, Course, Batch, Institute, Booking, Certificate, ReactivationRequest } from '@/api/maritimeMockApi'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -10,9 +10,11 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { Building2, BookOpen, Calendar, Users, Award, TrendingUp, Plus, Upload, CheckCircle, AlertCircle } from 'lucide-react'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Building2, BookOpen, Calendar, Users, Award, TrendingUp, Plus, Upload, CheckCircle, AlertCircle, AlertTriangle, Clock } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { courseTypes, courseModes } from '@/data/maritimeMockData'
+import { ReactivationRequestForm } from '@/components/ReactivationRequestForm'
 
 interface InstructorDashboardProps {
   onNavigate: (page: string) => void
@@ -29,6 +31,8 @@ export default function InstructorDashboard({ onNavigate }: InstructorDashboardP
   const [showCourseDialog, setShowCourseDialog] = useState(false)
   const [showBatchDialog, setShowBatchDialog] = useState(false)
   const [selectedCourse, setSelectedCourse] = useState<string>('')
+  const [reactivationRequest, setReactivationRequest] = useState<ReactivationRequest | null>(null)
+  const [isExpired, setIsExpired] = useState(false)
 
   const [courseForm, setCourseForm] = useState({
     title: '',
@@ -64,6 +68,14 @@ export default function InstructorDashboard({ onNavigate }: InstructorDashboardP
       setInstitute(instituteData)
 
       if (instituteData) {
+        const expired = maritimeApi.isInstituteExpired(instituteData)
+        setIsExpired(expired)
+
+        if (expired) {
+          const pendingRequest = await maritimeApi.getReactivationRequestByInstId(instituteData.instid)
+          setReactivationRequest(pendingRequest)
+        }
+
         const instituteCourses = await maritimeApi.listCourses({ instid: instituteData.instid })
         setCourses(instituteCourses)
 
@@ -233,6 +245,45 @@ export default function InstructorDashboard({ onNavigate }: InstructorDashboardP
             </Badge>
           </div>
 
+          {isExpired && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Institute Accreditation Expired</AlertTitle>
+              <AlertDescription className="mt-2">
+                {reactivationRequest ? (
+                  <div className="space-y-2">
+                    <p className="flex items-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      Your reactivation request is pending admin review
+                    </p>
+                    <p className="text-sm">
+                      Submitted on: {new Date(reactivationRequest.submitted_at).toLocaleDateString()}
+                    </p>
+                    <p className="text-sm mt-2">
+                      All course and batch creation features are temporarily disabled until your accreditation is renewed.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <p>
+                      Your institute accreditation expired on {new Date(institute.valid_to).toLocaleDateString()}.
+                      All course and batch creation features are temporarily disabled.
+                    </p>
+                    <p>
+                      Submit a reactivation request with your updated accreditation details to restore full access.
+                    </p>
+                    <div className="mt-4">
+                      <ReactivationRequestForm
+                        institute={institute}
+                        onSubmitSuccess={loadDashboardData}
+                      />
+                    </div>
+                  </div>
+                )}
+              </AlertDescription>
+            </Alert>
+          )}
+
           <div className="grid md:grid-cols-4 gap-4">
             <Card>
               <CardContent className="pt-6">
@@ -300,7 +351,7 @@ export default function InstructorDashboard({ onNavigate }: InstructorDashboardP
               </div>
               <Dialog open={showCourseDialog} onOpenChange={setShowCourseDialog}>
                 <DialogTrigger asChild>
-                  <Button>
+                  <Button disabled={isExpired}>
                     <Plus className="h-4 w-4 mr-2" />
                     Add Course
                   </Button>
@@ -438,6 +489,7 @@ export default function InstructorDashboard({ onNavigate }: InstructorDashboardP
                         setSelectedCourse(course.courseid)
                         setShowBatchDialog(true)
                       }}
+                      disabled={isExpired}
                     >
                       <Plus className="h-4 w-4 mr-2" />
                       Add Batch
@@ -453,7 +505,7 @@ export default function InstructorDashboard({ onNavigate }: InstructorDashboardP
                   <BookOpen className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                   <p className="text-lg font-medium mb-2">No courses yet</p>
                   <p className="text-muted-foreground mb-4">Create your first maritime training course</p>
-                  <Button onClick={() => setShowCourseDialog(true)}>
+                  <Button onClick={() => setShowCourseDialog(true)} disabled={isExpired}>
                     <Plus className="h-4 w-4 mr-2" />
                     Add Course
                   </Button>

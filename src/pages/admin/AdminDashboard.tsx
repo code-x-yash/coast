@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { maritimeApi, Institute, Course, Booking, Certificate, User } from '@/api/maritimeMockApi'
+import { maritimeApi, Institute, Course, Booking, Certificate, User, ReactivationRequest } from '@/api/maritimeMockApi'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -19,9 +19,12 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
   const [bookings, setBookings] = useState<Booking[]>([])
   const [certificates, setCertificates] = useState<Certificate[]>([])
   const [users, setUsers] = useState<User[]>([])
+  const [reactivationRequests, setReactivationRequests] = useState<ReactivationRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedInstitute, setSelectedInstitute] = useState<Institute | null>(null)
   const [showVerificationDialog, setShowVerificationDialog] = useState(false)
+  const [selectedReactivationRequest, setSelectedReactivationRequest] = useState<ReactivationRequest | null>(null)
+  const [showReactivationDialog, setShowReactivationDialog] = useState(false)
 
   useEffect(() => {
     loadDashboardData()
@@ -31,12 +34,13 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
     try {
       setLoading(true)
 
-      const [instituteData, courseData, bookingData, certData, userData] = await Promise.all([
+      const [instituteData, courseData, bookingData, certData, userData, reactivationData] = await Promise.all([
         maritimeApi.listInstitutes(false),
         maritimeApi.listCourses(),
         maritimeApi.listBookings(),
         maritimeApi.listCertificates(),
-        maritimeApi.listAllUsers()
+        maritimeApi.listAllUsers(),
+        maritimeApi.listReactivationRequests()
       ])
 
       setInstitutes(instituteData)
@@ -44,6 +48,7 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
       setBookings(bookingData)
       setCertificates(certData)
       setUsers(userData)
+      setReactivationRequests(reactivationData)
     } catch (error) {
       console.error('Failed to load dashboard:', error)
       toast({
@@ -67,6 +72,27 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
 
       setShowVerificationDialog(false)
       setSelectedInstitute(null)
+      loadDashboardData()
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive'
+      })
+    }
+  }
+
+  const handleProcessReactivationRequest = async (requestid: string, action: 'approve' | 'reject') => {
+    try {
+      await maritimeApi.processReactivationRequest(requestid, action)
+
+      toast({
+        title: action === 'approve' ? 'Reactivation Approved' : 'Reactivation Rejected',
+        description: `The reactivation request has been ${action}d`,
+      })
+
+      setShowReactivationDialog(false)
+      setSelectedReactivationRequest(null)
       loadDashboardData()
     } catch (error: any) {
       toast({
@@ -205,16 +231,24 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
         </div>
 
         <Tabs defaultValue="verification" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="verification">
               Institute Verification
               {pendingInstitutes.length > 0 && (
                 <Badge variant="secondary" className="ml-2">{pendingInstitutes.length}</Badge>
               )}
             </TabsTrigger>
+            <TabsTrigger value="reactivation">
+              Reactivation Requests
+              {reactivationRequests.filter(r => r.status === 'pending').length > 0 && (
+                <Badge variant="secondary" className="ml-2">
+                  {reactivationRequests.filter(r => r.status === 'pending').length}
+                </Badge>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="institutes">All Institutes</TabsTrigger>
             <TabsTrigger value="analytics">Platform Analytics</TabsTrigger>
-            <TabsTrigger value="certificates">Certificate Management</TabsTrigger>
+            <TabsTrigger value="certificates">Certificates</TabsTrigger>
           </TabsList>
 
           <TabsContent value="verification" className="space-y-6">
@@ -323,6 +357,113 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
                         </Card>
                       )
                     })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="reactivation" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Institute Reactivation Requests</CardTitle>
+                <CardDescription>
+                  Review and process reactivation requests from expired institutes
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {reactivationRequests.filter(r => r.status === 'pending').length === 0 ? (
+                  <div className="text-center py-12">
+                    <CheckCircle className="h-12 w-12 mx-auto mb-4 text-green-600" />
+                    <p className="text-lg font-medium mb-2">All caught up!</p>
+                    <p className="text-muted-foreground">No pending reactivation requests</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {reactivationRequests
+                      .filter(r => r.status === 'pending')
+                      .map(request => {
+                        const institute = institutes.find(i => i.instid === request.instid)
+                        const instituteUser = users.find(u => u.userid === institute?.userid)
+
+                        return (
+                          <Card key={request.requestid} className="border-amber-200 bg-amber-50">
+                            <CardContent className="pt-6">
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-3">
+                                    <h3 className="font-semibold text-lg">{institute?.name}</h3>
+                                    <Badge variant="warning">
+                                      <Clock className="h-3 w-3 mr-1" />
+                                      Pending Review
+                                    </Badge>
+                                  </div>
+
+                                  <div className="grid md:grid-cols-2 gap-4 text-sm mb-4">
+                                    <div className="space-y-2">
+                                      <p>
+                                        <span className="font-medium">Current Accreditation:</span>{' '}
+                                        {institute?.accreditation_no}
+                                      </p>
+                                      <p>
+                                        <span className="font-medium">Current Validity:</span>{' '}
+                                        {institute && new Date(institute.valid_to).toLocaleDateString()} (Expired)
+                                      </p>
+                                      <p>
+                                        <span className="font-medium">Submitted:</span>{' '}
+                                        {new Date(request.submitted_at).toLocaleDateString()}
+                                      </p>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                      <p>
+                                        <span className="font-medium">New Accreditation:</span>{' '}
+                                        {request.accreditation_no}
+                                      </p>
+                                      <p>
+                                        <span className="font-medium">New Validity:</span>{' '}
+                                        {new Date(request.valid_from).toLocaleDateString()} - {new Date(request.valid_to).toLocaleDateString()}
+                                      </p>
+                                      <p>
+                                        <span className="font-medium">Contact Person:</span>{' '}
+                                        {instituteUser?.name || 'N/A'}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  {request.reason && (
+                                    <Alert className="mb-3">
+                                      <AlertDescription>
+                                        <strong>Reason:</strong> {request.reason}
+                                      </AlertDescription>
+                                    </Alert>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="flex gap-2 mt-4 pt-4 border-t">
+                                <Button
+                                  onClick={() => {
+                                    setSelectedReactivationRequest(request)
+                                    setShowReactivationDialog(true)
+                                  }}
+                                  className="bg-green-600 hover:bg-green-700"
+                                >
+                                  <CheckCircle className="h-4 w-4 mr-2" />
+                                  Review & Approve
+                                </Button>
+                                <Button
+                                  variant="destructive"
+                                  onClick={() => handleProcessReactivationRequest(request.requestid, 'reject')}
+                                >
+                                  <XCircle className="h-4 w-4 mr-2" />
+                                  Reject
+                                </Button>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        )
+                      })}
                   </div>
                 )}
               </CardContent>
@@ -611,40 +752,163 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
         </Tabs>
 
         <Dialog open={showVerificationDialog} onOpenChange={setShowVerificationDialog}>
-          <DialogContent>
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Verify Institute</DialogTitle>
+              <DialogTitle>Institute Verification Review</DialogTitle>
               <DialogDescription>
-                Confirm verification of {selectedInstitute?.name}
+                Complete institute information for verification review
               </DialogDescription>
             </DialogHeader>
 
             {selectedInstitute && (
-              <div className="space-y-4">
+              <div className="space-y-6">
+                <div className="border rounded-lg p-4 bg-muted space-y-4">
+                  <div>
+                    <h3 className="font-semibold text-lg mb-3">{selectedInstitute.name}</h3>
+                  </div>
+
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">Accreditation Number</p>
+                      <p className="font-medium">{selectedInstitute.accreditation_no}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">Registration Date</p>
+                      <p className="font-medium">{new Date(selectedInstitute.created_at!).toLocaleDateString()}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">Valid From</p>
+                      <p className="font-medium">{new Date(selectedInstitute.valid_from).toLocaleDateString()}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">Valid To</p>
+                      <p className="font-medium">{new Date(selectedInstitute.valid_to).toLocaleDateString()}</p>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  <div>
+                    <h4 className="font-semibold mb-3">Contact Information</h4>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-1">Contact Email</p>
+                        <p className="font-medium">{selectedInstitute.contact_email}</p>
+                      </div>
+                      {selectedInstitute.contact_phone && (
+                        <div>
+                          <p className="text-sm text-muted-foreground mb-1">Contact Phone</p>
+                          <p className="font-medium">{selectedInstitute.contact_phone}</p>
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-1">Contact Person</p>
+                        <p className="font-medium">
+                          {users.find(u => u.userid === selectedInstitute.userid)?.name || 'N/A'}
+                        </p>
+                      </div>
+                      {users.find(u => u.userid === selectedInstitute.userid)?.phone && (
+                        <div>
+                          <p className="text-sm text-muted-foreground mb-1">Person Phone</p>
+                          <p className="font-medium">
+                            {users.find(u => u.userid === selectedInstitute.userid)?.phone}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  <div>
+                    <h4 className="font-semibold mb-3">Location Details</h4>
+                    <div className="space-y-2">
+                      {selectedInstitute.address && (
+                        <div>
+                          <p className="text-sm text-muted-foreground mb-1">Address</p>
+                          <p className="font-medium">{selectedInstitute.address}</p>
+                        </div>
+                      )}
+                      <div className="grid md:grid-cols-2 gap-4">
+                        {selectedInstitute.city && (
+                          <div>
+                            <p className="text-sm text-muted-foreground mb-1">City</p>
+                            <p className="font-medium">{selectedInstitute.city}</p>
+                          </div>
+                        )}
+                        {selectedInstitute.state && (
+                          <div>
+                            <p className="text-sm text-muted-foreground mb-1">State</p>
+                            <p className="font-medium">{selectedInstitute.state}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {selectedInstitute.documents && selectedInstitute.documents.length > 0 && (
+                    <>
+                      <Separator />
+                      <div>
+                        <h4 className="font-semibold mb-3">Submitted Documents</h4>
+                        <div className="space-y-2">
+                          {selectedInstitute.documents.map((doc: any, index: number) => (
+                            <div key={index} className="flex items-center gap-2 p-2 bg-background rounded border">
+                              <FileCheck className="h-4 w-4 text-primary" />
+                              <span className="text-sm">{doc.name || `Document ${index + 1}`}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {courses.filter(c => c.instid === selectedInstitute.instid).length > 0 && (
+                    <>
+                      <Separator />
+                      <Alert>
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>
+                          This institute has already created{' '}
+                          <strong>{courses.filter(c => c.instid === selectedInstitute.instid).length}</strong>{' '}
+                          course(s) that will become active upon verification
+                        </AlertDescription>
+                      </Alert>
+                    </>
+                  )}
+                </div>
+
                 <Alert>
                   <CheckCircle className="h-4 w-4" />
                   <AlertDescription>
-                    By verifying this institute, you confirm that:
+                    <strong>Verification Confirmation</strong>
+                    <p className="mt-2">By verifying this institute, you confirm that:</p>
                     <ul className="list-disc list-inside mt-2 space-y-1">
-                      <li>DGShipping accreditation number is valid</li>
+                      <li>DGShipping accreditation number is valid and verified</li>
                       <li>Accreditation validity dates are correct</li>
-                      <li>Institute documents have been reviewed</li>
-                      <li>Institute can start offering courses on the platform</li>
+                      <li>All submitted documents have been reviewed</li>
+                      <li>Contact information has been verified</li>
+                      <li>Institute meets platform standards and can offer courses</li>
                     </ul>
                   </AlertDescription>
                 </Alert>
-
-                <div className="border rounded-lg p-4 space-y-2 bg-muted">
-                  <p><span className="font-medium">Institute:</span> {selectedInstitute.name}</p>
-                  <p><span className="font-medium">Accreditation:</span> {selectedInstitute.accreditation_no}</p>
-                  <p><span className="font-medium">Valid Until:</span> {new Date(selectedInstitute.valid_to).toLocaleDateString()}</p>
-                </div>
               </div>
             )}
 
-            <DialogFooter>
+            <DialogFooter className="flex gap-2">
               <Button variant="outline" onClick={() => setShowVerificationDialog(false)}>
                 Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  if (selectedInstitute) {
+                    handleVerifyInstitute(selectedInstitute.instid, 'rejected')
+                  }
+                }}
+              >
+                <XCircle className="h-4 w-4 mr-2" />
+                Reject
               </Button>
               <Button
                 onClick={() => selectedInstitute && handleVerifyInstitute(selectedInstitute.instid, 'verified')}
@@ -652,6 +916,180 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
               >
                 <CheckCircle className="h-4 w-4 mr-2" />
                 Verify & Approve
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showReactivationDialog} onOpenChange={setShowReactivationDialog}>
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Reactivation Request Review</DialogTitle>
+              <DialogDescription>
+                Review and approve institute reactivation request
+              </DialogDescription>
+            </DialogHeader>
+
+            {selectedReactivationRequest && (
+              <div className="space-y-6">
+                <div className="border rounded-lg p-4 bg-muted space-y-4">
+                  {(() => {
+                    const institute = institutes.find(i => i.instid === selectedReactivationRequest.instid)
+                    const instituteUser = users.find(u => u.userid === institute?.userid)
+
+                    return (
+                      <>
+                        <div>
+                          <h3 className="font-semibold text-lg mb-3">{institute?.name}</h3>
+                        </div>
+
+                        <div className="grid md:grid-cols-2 gap-6">
+                          <div>
+                            <h4 className="font-semibold mb-3 text-destructive">Current Information (Expired)</h4>
+                            <div className="space-y-2">
+                              <div>
+                                <p className="text-sm text-muted-foreground mb-1">Accreditation Number</p>
+                                <p className="font-medium">{institute?.accreditation_no}</p>
+                              </div>
+                              <div>
+                                <p className="text-sm text-muted-foreground mb-1">Valid Period</p>
+                                <p className="font-medium">
+                                  {institute && new Date(institute.valid_from).toLocaleDateString()} - {institute && new Date(institute.valid_to).toLocaleDateString()}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div>
+                            <h4 className="font-semibold mb-3 text-green-600">New Information (Requested)</h4>
+                            <div className="space-y-2">
+                              <div>
+                                <p className="text-sm text-muted-foreground mb-1">Accreditation Number</p>
+                                <p className="font-medium">{selectedReactivationRequest.accreditation_no}</p>
+                              </div>
+                              <div>
+                                <p className="text-sm text-muted-foreground mb-1">Valid Period</p>
+                                <p className="font-medium">
+                                  {new Date(selectedReactivationRequest.valid_from).toLocaleDateString()} - {new Date(selectedReactivationRequest.valid_to).toLocaleDateString()}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <Separator />
+
+                        <div>
+                          <h4 className="font-semibold mb-3">Updated Contact Information</h4>
+                          <div className="grid md:grid-cols-2 gap-4">
+                            {selectedReactivationRequest.contact_email && (
+                              <div>
+                                <p className="text-sm text-muted-foreground mb-1">Contact Email</p>
+                                <p className="font-medium">{selectedReactivationRequest.contact_email}</p>
+                              </div>
+                            )}
+                            {selectedReactivationRequest.contact_phone && (
+                              <div>
+                                <p className="text-sm text-muted-foreground mb-1">Contact Phone</p>
+                                <p className="font-medium">{selectedReactivationRequest.contact_phone}</p>
+                              </div>
+                            )}
+                            <div>
+                              <p className="text-sm text-muted-foreground mb-1">Contact Person</p>
+                              <p className="font-medium">{instituteUser?.name || 'N/A'}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {(selectedReactivationRequest.address || selectedReactivationRequest.city || selectedReactivationRequest.state) && (
+                          <>
+                            <Separator />
+                            <div>
+                              <h4 className="font-semibold mb-3">Updated Location Details</h4>
+                              <div className="space-y-2">
+                                {selectedReactivationRequest.address && (
+                                  <div>
+                                    <p className="text-sm text-muted-foreground mb-1">Address</p>
+                                    <p className="font-medium">{selectedReactivationRequest.address}</p>
+                                  </div>
+                                )}
+                                <div className="grid md:grid-cols-2 gap-4">
+                                  {selectedReactivationRequest.city && (
+                                    <div>
+                                      <p className="text-sm text-muted-foreground mb-1">City</p>
+                                      <p className="font-medium">{selectedReactivationRequest.city}</p>
+                                    </div>
+                                  )}
+                                  {selectedReactivationRequest.state && (
+                                    <div>
+                                      <p className="text-sm text-muted-foreground mb-1">State</p>
+                                      <p className="font-medium">{selectedReactivationRequest.state}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </>
+                        )}
+
+                        {selectedReactivationRequest.reason && (
+                          <>
+                            <Separator />
+                            <div>
+                              <h4 className="font-semibold mb-3">Reactivation Reason</h4>
+                              <p className="text-sm">{selectedReactivationRequest.reason}</p>
+                            </div>
+                          </>
+                        )}
+
+                        <div className="border-l-4 border-amber-500 pl-4">
+                          <p className="text-sm text-muted-foreground">
+                            Request submitted on {new Date(selectedReactivationRequest.submitted_at).toLocaleDateString()} at {new Date(selectedReactivationRequest.submitted_at).toLocaleTimeString()}
+                          </p>
+                        </div>
+                      </>
+                    )
+                  })()}
+                </div>
+
+                <Alert>
+                  <CheckCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    <strong>Reactivation Approval Confirmation</strong>
+                    <p className="mt-2">By approving this reactivation request, you confirm that:</p>
+                    <ul className="list-disc list-inside mt-2 space-y-1">
+                      <li>New DGShipping accreditation number is valid and verified</li>
+                      <li>Updated accreditation validity dates are correct</li>
+                      <li>Contact information has been reviewed</li>
+                      <li>Institute will be reactivated with full platform access</li>
+                      <li>All institute courses and batches will be activated</li>
+                    </ul>
+                  </AlertDescription>
+                </Alert>
+              </div>
+            )}
+
+            <DialogFooter className="flex gap-2">
+              <Button variant="outline" onClick={() => setShowReactivationDialog(false)}>
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  if (selectedReactivationRequest) {
+                    handleProcessReactivationRequest(selectedReactivationRequest.requestid, 'reject')
+                  }
+                }}
+              >
+                <XCircle className="h-4 w-4 mr-2" />
+                Reject
+              </Button>
+              <Button
+                onClick={() => selectedReactivationRequest && handleProcessReactivationRequest(selectedReactivationRequest.requestid, 'approve')}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Approve & Reactivate
               </Button>
             </DialogFooter>
           </DialogContent>

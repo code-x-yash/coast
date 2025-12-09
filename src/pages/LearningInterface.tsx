@@ -41,7 +41,8 @@ export default function LearningInterface({ courseId, onNavigate }: LearningInte
       const lessonsData = await mockApi.listLessonsForCourse(courseId)
       setLessons(lessonsData)
 
-      const enrollmentData = await mockApi.findEnrollmentByUserCourse(user.id, courseId)
+      const userId = (user as any).id || (user as any).userid || 'demo-user'
+      const enrollmentData = await mockApi.findEnrollmentByUserCourse(userId, courseId)
       if (enrollmentData) {
         setEnrollment(enrollmentData)
         setCompletedLessons(enrollmentData.completedLessons || [])

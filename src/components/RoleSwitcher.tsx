@@ -19,7 +19,7 @@ export function RoleSwitcher() {
   const [isOpen, setIsOpen] = useState(false)
 
   const loadUsers = async () => {
-    const allUsers = await maritimeApi.listUsers()
+    const allUsers = await maritimeApi.listAllUsers()
     setUsers(allUsers)
   }
 

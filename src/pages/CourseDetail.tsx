@@ -37,7 +37,8 @@ export default function CourseDetail({ courseId, onNavigate }: CourseDetailProps
       setLessons(lessonsData)
 
       if (user) {
-        const enrollment = await mockApi.findEnrollmentByUserCourse(user.id, courseId)
+        const userId = (user as any).id || (user as any).userid || 'demo-user'
+        const enrollment = await mockApi.findEnrollmentByUserCourse(userId, courseId)
         setIsEnrolled(!!enrollment)
       }
     } catch (error) {
@@ -54,7 +55,8 @@ export default function CourseDetail({ courseId, onNavigate }: CourseDetailProps
     }
 
     try {
-      await mockApi.enrollStudent(user.id, courseId)
+      const userId = (user as any).id || (user as any).userid || 'demo-user'
+      await mockApi.enrollStudent(userId, courseId)
       setIsEnrolled(true)
       toast({
         title: 'Successfully enrolled!',

@@ -341,10 +341,10 @@ export default function Navbar({ onNavigate, currentPage }: NavbarProps) {
               </>
             ) : (
               <>
-                <Button variant="ghost" onClick={() => onNavigate('sign-in')} className="hidden sm:inline-flex text-white hover:bg-white/20">
+                <Button variant="ghost" onClick={() => onNavigate('sign-in')} className="hidden sm:inline-flex text-white hover:text-white hover:bg-white/20">
                   Sign In
                 </Button>
-                <Button onClick={() => onNavigate('sign-up-student')} className="bg-white text-primary hover:bg-white/90">
+                <Button onClick={() => onNavigate('sign-up-student')} className="bg-white text-primary hover:text-primary hover:bg-white/90">
                   Get Started
                 </Button>
               </>
@@ -353,7 +353,7 @@ export default function Navbar({ onNavigate, currentPage }: NavbarProps) {
             {/* Mobile Menu */}
             <Sheet>
               <SheetTrigger asChild className="md:hidden">
-                <Button variant="ghost" size="icon" className="text-white hover:bg-white/20">
+                <Button variant="ghost" size="icon" className="text-white hover:text-white hover:bg-white/20">
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>

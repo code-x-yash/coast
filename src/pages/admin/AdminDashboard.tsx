@@ -36,7 +36,7 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
         maritimeApi.listCourses(),
         maritimeApi.listBookings(),
         maritimeApi.listCertificates(),
-        maritimeApi.listUsers()
+        maritimeApi.listAllUsers()
       ])
 
       setInstitutes(instituteData)

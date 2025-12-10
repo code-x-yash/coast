@@ -731,7 +731,7 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
                     </div>
                   </div>
 
-                  <Separator />
+                  
 
                   <div>
                     <h4 className="font-semibold mb-3">Contact Information</h4>
@@ -763,7 +763,7 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
                     </div>
                   </div>
 
-                  <Separator />
+                  
 
                   <div>
                     <h4 className="font-semibold mb-3">Location Details</h4>
@@ -793,7 +793,7 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
 
                   {selectedInstitute.documents && selectedInstitute.documents.length > 0 && (
                     <>
-                      <Separator />
+                      
                       <div>
                         <h4 className="font-semibold mb-3">Submitted Documents</h4>
                         <div className="space-y-2">
@@ -810,7 +810,7 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
 
                   {courses.filter(c => c.instid === selectedInstitute.instid).length > 0 && (
                     <>
-                      <Separator />
+                      
                       <Alert>
                         <AlertCircle className="h-4 w-4" />
                         <AlertDescription>
@@ -922,7 +922,7 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
                           </div>
                         </div>
 
-                        <Separator />
+                        
 
                         <div>
                           <h4 className="font-semibold mb-3">Updated Contact Information</h4>
@@ -948,7 +948,7 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
 
                         {(selectedReactivationRequest.address || selectedReactivationRequest.city || selectedReactivationRequest.state) && (
                           <>
-                            <Separator />
+                            
                             <div>
                               <h4 className="font-semibold mb-3">Updated Location Details</h4>
                               <div className="space-y-2">
@@ -979,7 +979,7 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
 
                         {selectedReactivationRequest.reason && (
                           <>
-                            <Separator />
+                            
                             <div>
                               <h4 className="font-semibold mb-3">Reactivation Reason</h4>
                               <p className="text-sm">{selectedReactivationRequest.reason}</p>

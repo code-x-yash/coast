@@ -51,16 +51,17 @@ export const courseService = {
   async getCourses(filters?: {
     type?: string
     mode?: string
-    search?: string 
+    search?: string
     limit?: number
   }) {
     let query = supabase
       .from('courses')
       .select(`
         *,
-        institutes(name, city, verified_status)
+        institutes!inner(name, city, verified_status)
       `)
       .eq('status', 'active')
+      .eq('institutes.verified_status', 'verified')
 
     if (filters?.type) {
       query = query.eq('type', filters.type)
@@ -91,9 +92,11 @@ export const courseService = {
       .from('courses')
       .select(`
         *,
-        institutes(name, city, state, verified_status, contact_email, contact_phone)
+        institutes!inner(name, city, state, verified_status, contact_email, contact_phone)
       `)
       .eq('courseid', id)
+      .eq('status', 'active')
+      .eq('institutes.verified_status', 'verified')
       .maybeSingle()
 
     if (error) throw error

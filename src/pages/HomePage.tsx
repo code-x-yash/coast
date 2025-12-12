@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { courseService, type Course } from '@/services/courses'
-import { Star, Clock, Users, Award, Anchor, Ship, TrendingUp } from 'lucide-react'
+import { Star, Clock, Users, Award, Anchor, Ship, TrendingUp, CheckCircle } from 'lucide-react'
 
 export default function HomePage() {
   const navigate = useNavigate()
@@ -186,6 +186,12 @@ export default function HomePage() {
                 </Card>
               ))}
             </div>
+          ) : featuredCourses.length === 0 ? (
+            <div className="text-center py-12 bg-muted/30 rounded-lg">
+              <Ship className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+              <p className="text-lg font-medium mb-2">No courses available yet</p>
+              <p className="text-muted-foreground">Check back soon for new maritime training courses</p>
+            </div>
           ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {featuredCourses.map((course) => (
@@ -204,6 +210,17 @@ export default function HomePage() {
                     <h3 className="text-lg font-semibold mb-2 line-clamp-2 group-hover:text-primary transition-colors">
                       {course.title}
                     </h3>
+                    {course.institutes?.name && (
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-sm text-muted-foreground truncate flex-1">
+                          {course.institutes.name}
+                        </span>
+                        <Badge variant="outline" className="text-xs bg-green-50 border-green-200 text-green-700 shrink-0">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Verified
+                        </Badge>
+                      </div>
+                    )}
                     <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
                       {course.description || 'Professional maritime training course'}
                     </p>
@@ -219,12 +236,10 @@ export default function HomePage() {
                     </div>
 
                     <div className="flex items-center justify-between">
-                      {course.institutes?.name && (
-                        <span className="text-xs text-muted-foreground truncate flex-1">
-                          {course.institutes.name}
-                        </span>
-                      )}
-                      <div className="text-xl font-bold text-primary whitespace-nowrap ml-2">
+                      <span className="text-xs text-muted-foreground">
+                        {course.validity_months || 60} months validity
+                      </span>
+                      <div className="text-xl font-bold text-primary whitespace-nowrap">
                         ₹{Number(course.fees).toLocaleString()}
                       </div>
                     </div>

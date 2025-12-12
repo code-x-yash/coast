@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { courseService, type Course } from '@/services/courses'
-import { Star, Clock, Users, Search, SlidersHorizontal, Ship } from 'lucide-react'
+import { Star, Clock, Users, Search, SlidersHorizontal, Ship, CheckCircle } from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -225,9 +225,15 @@ export default function CourseCatalog() {
                     {course.title}
                   </h3>
                   {course.institutes?.name && (
-                    <p className="text-sm text-muted-foreground mb-2">
-                      {course.institutes.name}
-                    </p>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-sm text-muted-foreground truncate flex-1">
+                        {course.institutes.name}
+                      </span>
+                      <Badge variant="outline" className="text-xs bg-green-50 border-green-200 text-green-700 shrink-0">
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        Verified
+                      </Badge>
+                    </div>
                   )}
                   <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
                     {course.description || 'Professional maritime training course'}

@@ -37,13 +37,13 @@ export interface Course {
 }
 
 export const courseService = {
-  async getMasterCourses() {
+    async getMasterCourses() {
     const { data, error } = await supabase
       .from('master_courses')
       .select('*')
       .eq('is_active', true)
       .order('course_name')
-
+        console.log(data, error);
     if (error) throw error
     return data as MasterCourse[]
   },

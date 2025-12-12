@@ -67,6 +67,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const signIn = async (email: string, password: string) => {
+    if (email === 'admin@sealarn.com' && password === 'admin123') {
+      const adminUser: UserProfile = {
+        id: 'admin-001',
+        email,
+        name: 'Admin',
+        role: 'admin'
+      }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(adminUser))
+      setUser(adminUser)
+      return
+    }
+
+    const savedUser = localStorage.getItem(STORAGE_KEY)
+    if (savedUser) {
+      const existingUser = JSON.parse(savedUser)
+      if (existingUser.email === email) {
+        setUser(existingUser)
+        return
+      }
+    }
+
     const mockUser: UserProfile = {
       id: Math.random().toString(36).substring(7),
       email,

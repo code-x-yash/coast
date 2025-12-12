@@ -93,7 +93,7 @@ export default function InstituteDetail() {
   if (!institute) {
     return (
       <div className="min-h-screen py-8">
-        <div className="container mx-auto px-4 text-center">
+        <div className="container px-4 text-center">
           <Building2 className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
           <h2 className="text-2xl font-bold mb-2">Institute Not Found</h2>
           <p className="text-muted-foreground mb-6">
@@ -112,7 +112,7 @@ export default function InstituteDetail() {
     <div className="flex flex-col min-h-screen">
       <Button
         variant="ghost"
-        className="container mx-auto px-4 mt-6 w-fit"
+        className="container px-2 mt-6 w-fit mb-2 ms-4"
         onClick={() => navigate('/')}
       >
         <ArrowLeft className="mr-2 h-4 w-4" />

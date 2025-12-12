@@ -9,6 +9,7 @@ import LearningInterface from '@/pages/LearningInterface'
 import SignIn from '@/pages/SignIn'
 import SignUpSeafarer from '@/pages/SignUpSeafarer'
 import RegisterInstitute from '@/pages/RegisterInstitute'
+import CompleteProfile from '@/pages/CompleteProfile'
 import SeafarerDashboard from '@/pages/seafarer/SeafarerDashboard'
 import InstructorDashboard from '@/pages/instructor/InstructorDashboard'
 import AdminDashboard from '@/pages/admin/AdminDashboard'
@@ -29,6 +30,7 @@ function App() {
           <Route path="/sign-in" element={<SignIn />} />
           <Route path="/sign-up" element={<SignUpSeafarer />} />
           <Route path="/register-institute" element={<RegisterInstitute />} />
+          <Route path="/complete-profile" element={<CompleteProfile />} />
 
           <Route path="/seafarer" element={<Layout />}>
             <Route

@@ -87,10 +87,12 @@ export default function CourseDetail() {
       if (studentError) throw studentError
       if (!studentData) {
         toast({
-          title: 'Profile Not Found',
-          description: 'Please complete your seafarer profile first.',
-          variant: 'destructive'
+          title: 'Profile Incomplete',
+          description: 'Redirecting to complete your seafarer profile...',
         })
+        setTimeout(() => {
+          navigate('/complete-profile')
+        }, 1500)
         return
       }
 

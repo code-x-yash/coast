@@ -43,6 +43,16 @@ export default function SeafarerDashboard() {
       setLoading(true)
 
       const seafarerData = await api.getSeafarerByUserId(user.id)
+
+      if (!seafarerData) {
+        toast({
+          title: 'Profile Incomplete',
+          description: 'Please complete your seafarer profile to continue.',
+        })
+        navigate('/complete-profile')
+        return
+      }
+
       setSeafarer(seafarerData)
 
       const allCourses = await api.listCourses()

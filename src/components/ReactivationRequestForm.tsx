@@ -8,12 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AlertCircle, CheckCircle, RefreshCw } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
-
-interface Institute {
-  instid: string
-  name: string
-  verified_status: string
-}
+import { maritimeApi, Institute } from '@/services/maritime'
 
 interface ReactivationRequestFormProps {
   institute: Institute
@@ -24,21 +19,15 @@ export function ReactivationRequestForm({ institute, onSubmitSuccess }: Reactiva
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({
-    accreditation_no: institute.accreditation_no,
-    valid_from: '',
-    valid_to: '',
-    contact_email: institute.contact_email || '',
-    contact_phone: institute.contact_phone || '',
-    address: institute.address || '',
-    city: institute.city || '',
-    state: institute.state || '',
-    reason: ''
+    new_accreditation_no: institute.accreditation_no,
+    new_valid_from: '',
+    new_valid_to: ''
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!form.valid_from || !form.valid_to) {
+    if (!form.new_valid_from || !form.new_valid_to) {
       toast({
         title: 'Validation Error',
         description: 'Please provide the new validity dates',
@@ -47,8 +36,8 @@ export function ReactivationRequestForm({ institute, onSubmitSuccess }: Reactiva
       return
     }
 
-    const validFrom = new Date(form.valid_from)
-    const validTo = new Date(form.valid_to)
+    const validFrom = new Date(form.new_valid_from)
+    const validTo = new Date(form.new_valid_to)
 
     if (validTo <= validFrom) {
       toast({
@@ -63,7 +52,9 @@ export function ReactivationRequestForm({ institute, onSubmitSuccess }: Reactiva
       setLoading(true)
       await maritimeApi.createReactivationRequest({
         instid: institute.instid,
-        ...form
+        new_accreditation_no: form.new_accreditation_no,
+        new_valid_from: form.new_valid_from,
+        new_valid_to: form.new_valid_to
       })
 
       toast({
@@ -110,95 +101,36 @@ export function ReactivationRequestForm({ institute, onSubmitSuccess }: Reactiva
 
           <div className="space-y-4">
             <div>
-              <Label htmlFor="accreditation_no">Accreditation Number</Label>
+              <Label htmlFor="new_accreditation_no">New Accreditation Number</Label>
               <Input
-                id="accreditation_no"
-                value={form.accreditation_no}
-                onChange={(e) => setForm({ ...form, accreditation_no: e.target.value })}
+                id="new_accreditation_no"
+                value={form.new_accreditation_no}
+                onChange={(e) => setForm({ ...form, new_accreditation_no: e.target.value })}
                 required
               />
             </div>
 
             <div className="grid md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="valid_from">Valid From</Label>
+                <Label htmlFor="new_valid_from">Valid From</Label>
                 <Input
-                  id="valid_from"
+                  id="new_valid_from"
                   type="date"
-                  value={form.valid_from}
-                  onChange={(e) => setForm({ ...form, valid_from: e.target.value })}
+                  value={form.new_valid_from}
+                  onChange={(e) => setForm({ ...form, new_valid_from: e.target.value })}
                   required
                 />
               </div>
               <div>
-                <Label htmlFor="valid_to">Valid To</Label>
+                <Label htmlFor="new_valid_to">Valid To</Label>
                 <Input
-                  id="valid_to"
+                  id="new_valid_to"
                   type="date"
-                  value={form.valid_to}
-                  onChange={(e) => setForm({ ...form, valid_to: e.target.value })}
+                  value={form.new_valid_to}
+                  onChange={(e) => setForm({ ...form, new_valid_to: e.target.value })}
                   required
                 />
               </div>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="contact_email">Contact Email</Label>
-                <Input
-                  id="contact_email"
-                  type="email"
-                  value={form.contact_email}
-                  onChange={(e) => setForm({ ...form, contact_email: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="contact_phone">Contact Phone</Label>
-                <Input
-                  id="contact_phone"
-                  value={form.contact_phone}
-                  onChange={(e) => setForm({ ...form, contact_phone: e.target.value })}
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="address">Address</Label>
-              <Input
-                id="address"
-                value={form.address}
-                onChange={(e) => setForm({ ...form, address: e.target.value })}
-              />
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="city">City</Label>
-                <Input
-                  id="city"
-                  value={form.city}
-                  onChange={(e) => setForm({ ...form, city: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="state">State</Label>
-                <Input
-                  id="state"
-                  value={form.state}
-                  onChange={(e) => setForm({ ...form, state: e.target.value })}
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="reason">Reason for Reactivation (Optional)</Label>
-              <Textarea
-                id="reason"
-                value={form.reason}
-                onChange={(e) => setForm({ ...form, reason: e.target.value })}
-                placeholder="Provide additional context for your reactivation request..."
-                rows={4}
-              />
             </div>
           </div>
 

@@ -14,6 +14,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Building2, BookOpen, Calendar, Users, Award, TrendingUp, Plus, Upload, CheckCircle, AlertCircle, AlertTriangle, Clock } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { ReactivationRequestForm } from '@/components/ReactivationRequestForm'
+import { maritimeApi, courseTypes, courseModes, Institute, Course, Batch, Booking, Certificate, ReactivationRequest } from '@/services/maritime'
 
 export default function InstructorDashboard() {
   const navigate = useNavigate()

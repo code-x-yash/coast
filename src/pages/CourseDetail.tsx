@@ -17,6 +17,7 @@ export default function CourseDetail() {
   const { user } = useAuth()
   const [course, setCourse] = useState<Course | null>(null)
   const [batches, setBatches] = useState<any[]>([])
+  const [enrolledBatchIds, setEnrolledBatchIds] = useState<Set<string>>(new Set())
   const [isLoading, setIsLoading] = useState(true)
   const [showBatchDialog, setShowBatchDialog] = useState(false)
   const [selectedBatch, setSelectedBatch] = useState<any>(null)
@@ -39,6 +40,26 @@ export default function CourseDetail() {
         setCourse(courseData)
         const batchesData = await courseService.getCourseBatches(courseId)
         setBatches(batchesData || [])
+
+        if (user) {
+          const { data: studentData } = await supabase
+            .from('students')
+            .select('studid')
+            .eq('userid', user.id)
+            .maybeSingle()
+
+          if (studentData) {
+            const { data: existingBookings } = await supabase
+              .from('bookings')
+              .select('batchid')
+              .eq('studid', studentData.studid)
+              .in('batchid', batchesData?.map(b => b.batchid) || [])
+
+            if (existingBookings) {
+              setEnrolledBatchIds(new Set(existingBookings.map(b => b.batchid)))
+            }
+          }
+        }
       }
     } catch (error) {
       console.error('Failed to load course:', error)
@@ -76,6 +97,15 @@ export default function CourseDetail() {
   const handleConfirmEnrollment = async () => {
     if (!selectedBatch || !user || !courseId) return
 
+    if (enrolledBatchIds.has(selectedBatch.batchid)) {
+      toast({
+        title: 'Already Enrolled',
+        description: 'You are already enrolled in this batch.',
+        variant: 'destructive'
+      })
+      return
+    }
+
     setEnrolling(true)
     try {
       const { data: studentData, error: studentError } = await supabase
@@ -96,6 +126,23 @@ export default function CourseDetail() {
         return
       }
 
+      const { data: duplicateCheck } = await supabase
+        .from('bookings')
+        .select('bookid')
+        .eq('studid', studentData.studid)
+        .eq('batchid', selectedBatch.batchid)
+        .maybeSingle()
+
+      if (duplicateCheck) {
+        toast({
+          title: 'Already Enrolled',
+          description: 'You are already enrolled in this batch.',
+          variant: 'destructive'
+        })
+        setEnrolling(false)
+        return
+      }
+
       const bookingData = {
         studid: studentData.studid,
         batchid: selectedBatch.batchid,
@@ -109,6 +156,8 @@ export default function CourseDetail() {
         .insert([bookingData])
 
       if (bookingError) throw bookingError
+
+      setEnrolledBatchIds(prev => new Set([...prev, selectedBatch.batchid]))
 
       toast({
         title: 'Enrollment Successful!',
@@ -315,33 +364,44 @@ export default function CourseDetail() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {batches.map((batch) => (
-                  <div
-                    key={batch.batchid}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex-1">
-                      <p className="font-medium">{batch.batch_name || `Batch ${batch.batchid.slice(0, 8)}`}</p>
-                      <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-4 w-4" />
-                          <span>Start: {new Date(batch.start_date).toLocaleDateString()}</span>
+                {batches.map((batch) => {
+                  const isEnrolled = enrolledBatchIds.has(batch.batchid)
+                  return (
+                    <div
+                      key={batch.batchid}
+                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium">{batch.batch_name || `Batch ${batch.batchid.slice(0, 8)}`}</p>
+                          {isEnrolled && (
+                            <Badge variant="outline" className="bg-green-50 border-green-200 text-green-700">
+                              <CheckCircle2 className="h-3 w-3 mr-1" />
+                              You're Enrolled
+                            </Badge>
+                          )}
                         </div>
-                        <span>•</span>
-                        <span>End: {new Date(batch.end_date).toLocaleDateString()}</span>
+                        <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-4 w-4" />
+                            <span>Start: {new Date(batch.start_date).toLocaleDateString()}</span>
+                          </div>
+                          <span>•</span>
+                          <span>End: {new Date(batch.end_date).toLocaleDateString()}</span>
+                        </div>
+                        {batch.seats_total && (
+                          <div className="flex items-center gap-1 mt-1 text-sm text-muted-foreground">
+                            <Users className="h-4 w-4" />
+                            <span>Capacity: {batch.seats_booked || 0}/{batch.seats_total} students</span>
+                          </div>
+                        )}
                       </div>
-                      {batch.seats_total && (
-                        <div className="flex items-center gap-1 mt-1 text-sm text-muted-foreground">
-                          <Users className="h-4 w-4" />
-                          <span>Capacity: {batch.seats_booked || 0}/{batch.seats_total} students</span>
-                        </div>
-                      )}
+                      <Badge variant={batch.batch_status === 'active' ? 'default' : 'secondary'}>
+                        {batch.batch_status}
+                      </Badge>
                     </div>
-                    <Badge variant={batch.batch_status === 'active' ? 'default' : 'secondary'}>
-                      {batch.batch_status}
-                    </Badge>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </CardContent>
           </Card>
@@ -358,42 +418,56 @@ export default function CourseDetail() {
           </DialogHeader>
 
           <div className="space-y-3 max-h-96 overflow-y-auto">
-            {batches.filter(b => ['active', 'upcoming'].includes(b.batch_status)).map((batch) => (
-              <div
-                key={batch.batchid}
-                className={`p-4 border rounded-lg cursor-pointer transition-all ${
-                  selectedBatch?.batchid === batch.batchid
-                    ? 'border-primary bg-primary/5 ring-2 ring-primary'
-                    : 'hover:border-primary/50 hover:bg-muted/50'
-                }`}
-                onClick={() => handleBatchSelect(batch)}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <p className="font-semibold">{batch.batch_name || `Batch ${batch.batchid.slice(0, 8)}`}</p>
-                    <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-4 w-4" />
-                        <span>{new Date(batch.start_date).toLocaleDateString()}</span>
+            {batches.filter(b => ['active', 'upcoming'].includes(b.batch_status)).map((batch) => {
+              const isEnrolled = enrolledBatchIds.has(batch.batchid)
+              return (
+                <div
+                  key={batch.batchid}
+                  className={`p-4 border rounded-lg transition-all ${
+                    isEnrolled
+                      ? 'border-green-200 bg-green-50 opacity-75'
+                      : selectedBatch?.batchid === batch.batchid
+                      ? 'border-primary bg-primary/5 ring-2 ring-primary cursor-pointer'
+                      : 'hover:border-primary/50 hover:bg-muted/50 cursor-pointer'
+                  }`}
+                  onClick={() => !isEnrolled && handleBatchSelect(batch)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold">{batch.batch_name || `Batch ${batch.batchid.slice(0, 8)}`}</p>
+                        {isEnrolled && (
+                          <Badge variant="outline" className="bg-green-50 border-green-200 text-green-700">
+                            Enrolled
+                          </Badge>
+                        )}
                       </div>
-                      <span>to</span>
-                      <span>{new Date(batch.end_date).toLocaleDateString()}</span>
+                      <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-4 w-4" />
+                          <span>{new Date(batch.start_date).toLocaleDateString()}</span>
+                        </div>
+                        <span>to</span>
+                        <span>{new Date(batch.end_date).toLocaleDateString()}</span>
+                      </div>
+                      {batch.seats_total && (
+                        <div className="flex items-center gap-1 mt-1 text-sm text-muted-foreground">
+                          <Users className="h-4 w-4" />
+                          <span>{batch.seats_booked || 0}/{batch.seats_total} seats</span>
+                        </div>
+                      )}
                     </div>
-                    {batch.seats_total && (
-                      <div className="flex items-center gap-1 mt-1 text-sm text-muted-foreground">
-                        <Users className="h-4 w-4" />
-                        <span>{batch.seats_booked || 0}/{batch.seats_total} seats</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="ml-4">
-                    {selectedBatch?.batchid === batch.batchid && (
-                      <CheckCircle2 className="h-6 w-6 text-primary" />
-                    )}
+                    <div className="ml-4">
+                      {isEnrolled ? (
+                        <CheckCircle2 className="h-6 w-6 text-green-600" />
+                      ) : selectedBatch?.batchid === batch.batchid ? (
+                        <CheckCircle2 className="h-6 w-6 text-primary" />
+                      ) : null}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
 
           {batches.filter(b => ['active', 'upcoming'].includes(b.batch_status)).length === 0 && (
@@ -416,9 +490,9 @@ export default function CourseDetail() {
             <Button
               className="flex-1"
               onClick={handleConfirmEnrollment}
-              disabled={!selectedBatch || enrolling}
+              disabled={!selectedBatch || enrolling || (selectedBatch && enrolledBatchIds.has(selectedBatch.batchid))}
             >
-              {enrolling ? 'Processing...' : 'Proceed to Payment'}
+              {enrolling ? 'Processing...' : (selectedBatch && enrolledBatchIds.has(selectedBatch.batchid)) ? 'Already Enrolled' : 'Proceed to Payment'}
             </Button>
           </div>
         </DialogContent>

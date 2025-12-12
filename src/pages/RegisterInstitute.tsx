@@ -45,17 +45,12 @@ export default function RegisterInstitute() {
   const [coursesError, setCoursesError] = useState('')
 
   useEffect(() => {
-    console.log('RegisterInstitute mounted, loading courses...')
     loadMasterCourses()
   }, [])
 
   const loadMasterCourses = async () => {
     try {
-      console.log('Starting to load master courses...')
       setCoursesError('')
-
-      console.log('Supabase client:', supabase ? 'initialized' : 'NOT initialized')
-
       const { data, error } = await supabase
         .from('master_courses')
         .select('master_course_id, course_name, course_code, category, description')
@@ -63,20 +58,15 @@ export default function RegisterInstitute() {
         .order('category', { ascending: true })
         .order('course_name', { ascending: true })
 
-      console.log('Supabase response:', { data, error })
-
       if (error) {
         console.error('Supabase error:', error)
         throw error
       }
-
-      console.log(`Loaded ${data?.length || 0} courses`)
       setMasterCourses(data || [])
     } catch (err: any) {
       console.error('Failed to load master courses:', err)
       setCoursesError(err.message || 'Failed to load courses. Please refresh the page.')
     } finally {
-      console.log('Setting loadingCourses to false')
       setLoadingCourses(false)
     }
   }
@@ -108,14 +98,6 @@ export default function RegisterInstitute() {
     acc[course.category].push(course)
     return acc
   }, {} as Record<string, MasterCourse[]>)
-
-  console.log('Current state:', {
-    loadingCourses,
-    coursesError,
-    masterCoursesCount: masterCourses.length,
-    groupedCoursesKeys: Object.keys(groupedCourses),
-    user: user ? 'logged in' : 'not logged in'
-  })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

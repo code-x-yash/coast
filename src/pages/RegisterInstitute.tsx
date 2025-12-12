@@ -42,6 +42,7 @@ export default function RegisterInstitute() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [loadingCourses, setLoadingCourses] = useState(true)
+  const [coursesError, setCoursesError] = useState('')
 
   useEffect(() => {
     loadMasterCourses()
@@ -49,6 +50,7 @@ export default function RegisterInstitute() {
 
   const loadMasterCourses = async () => {
     try {
+      setCoursesError('')
       const { data, error } = await supabase
         .from('master_courses')
         .select('master_course_id, course_name, course_code, category, description')
@@ -56,10 +58,14 @@ export default function RegisterInstitute() {
         .order('category', { ascending: true })
         .order('course_name', { ascending: true })
 
-      if (error) throw error
+      if (error) {
+        console.error('Supabase error:', error)
+        throw error
+      }
       setMasterCourses(data || [])
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to load master courses:', err)
+      setCoursesError(err.message || 'Failed to load courses. Please refresh the page.')
     } finally {
       setLoadingCourses(false)
     }
@@ -322,6 +328,20 @@ export default function RegisterInstitute() {
                       <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto"></div>
                       <p className="text-sm text-muted-foreground mt-2">Loading courses...</p>
                     </div>
+                  ) : coursesError ? (
+                    <Alert variant="destructive">
+                      <AlertDescription>
+                        {coursesError}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={loadMasterCourses}
+                          className="ml-2"
+                        >
+                          Retry
+                        </Button>
+                      </AlertDescription>
+                    </Alert>
                   ) : (
                     <div className="border rounded-lg p-4 max-h-96 overflow-y-auto space-y-4">
                       {Object.keys(groupedCourses).length === 0 ? (

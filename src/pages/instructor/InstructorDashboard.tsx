@@ -30,8 +30,11 @@ export default function InstructorDashboard() {
   const [selectedCourse, setSelectedCourse] = useState<string>('')
   const [reactivationRequest, setReactivationRequest] = useState<ReactivationRequest | null>(null)
   const [isExpired, setIsExpired] = useState(false)
+  const [approvedApplications, setApprovedApplications] = useState<any[]>([])
 
   const [courseForm, setCourseForm] = useState({
+    master_course_id: '',
+    application_id: '',
     title: '',
     type: 'STCW' as 'STCW' | 'Refresher' | 'Technical' | 'Other',
     duration: '',
@@ -73,6 +76,9 @@ export default function InstructorDashboard() {
           setReactivationRequest(pendingRequest)
         }
 
+        const approvedApps = await api.getApprovedCourseApplications(instituteData.instid)
+        setApprovedApplications(approvedApps)
+
         const instituteCourses = await api.listCourses({ instid: instituteData.instid })
         setCourses(instituteCourses)
 
@@ -109,21 +115,35 @@ export default function InstructorDashboard() {
   const handleCreateCourse = async () => {
     if (!institute) return
 
+    if (!courseForm.master_course_id) {
+      toast({
+        title: 'Error',
+        description: 'Please select an approved course',
+        variant: 'destructive'
+      })
+      return
+    }
+
     try {
       await api.createCourse({
         ...courseForm,
         instid: institute.instid,
         fees: parseFloat(courseForm.fees),
-        validity_months: parseInt(courseForm.validity_months)
+        validity_months: parseInt(courseForm.validity_months),
+        master_course_id: courseForm.master_course_id,
+        application_id: courseForm.application_id,
+        status: 'active'
       })
 
       toast({
         title: 'Course Created',
-        description: 'Your course has been added successfully'
+        description: 'Your course has been published successfully'
       })
 
       setShowCourseDialog(false)
       setCourseForm({
+        master_course_id: '',
+        application_id: '',
         title: '',
         type: 'STCW',
         duration: '',
@@ -137,7 +157,7 @@ export default function InstructorDashboard() {
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: error.message,
+        description: error.message || 'Failed to create course. Please ensure you have approval for this course.',
         variant: 'destructive'
       })
     }
@@ -356,99 +376,151 @@ export default function InstructorDashboard() {
                 <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>Create New Course</DialogTitle>
-                    <DialogDescription>Add a new maritime training course</DialogDescription>
+                    <DialogDescription>Publish a course from your approved courses</DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>Course Title *</Label>
-                      <Input
-                        value={courseForm.title}
-                        onChange={(e) => setCourseForm({ ...courseForm, title: e.target.value })}
-                        placeholder="e.g., Basic Safety Training (BST) - STCW"
-                      />
-                    </div>
+                    {approvedApplications.length === 0 ? (
+                      <Alert>
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertTitle>No Approved Courses</AlertTitle>
+                        <AlertDescription>
+                          You don't have any approved courses yet. Please wait for admin to approve your course applications.
+                        </AlertDescription>
+                      </Alert>
+                    ) : (
+                      <>
+                        <div className="space-y-2">
+                          <Label>Select Approved Course *</Label>
+                          <Select
+                            value={courseForm.master_course_id}
+                            onValueChange={(value) => {
+                              const selectedApp = approvedApplications.find(app => app.master_course_id === value)
+                              if (selectedApp) {
+                                setCourseForm({
+                                  ...courseForm,
+                                  master_course_id: value,
+                                  application_id: selectedApp.application_id,
+                                  title: selectedApp.master_courses.course_name,
+                                  description: selectedApp.master_courses.description || ''
+                                })
+                              }
+                            }}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a course to publish" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {approvedApplications.map((app) => (
+                                <SelectItem key={app.application_id} value={app.master_course_id}>
+                                  {app.master_courses.course_name} ({app.master_courses.course_code})
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
 
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>Course Type *</Label>
-                        <Select value={courseForm.type} onValueChange={(value: any) => setCourseForm({ ...courseForm, type: value })}>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {courseTypes.map(type => (
-                              <SelectItem key={type} value={type}>{type}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                        <div className="space-y-2">
+                          <Label>Course Title *</Label>
+                          <Input
+                            value={courseForm.title}
+                            onChange={(e) => setCourseForm({ ...courseForm, title: e.target.value })}
+                            placeholder="e.g., Basic Safety Training (BST) - STCW"
+                            disabled={!courseForm.master_course_id}
+                          />
+                        </div>
+                      </>
+                    )}
 
-                      <div className="space-y-2">
-                        <Label>Duration *</Label>
-                        <Input
-                          value={courseForm.duration}
-                          onChange={(e) => setCourseForm({ ...courseForm, duration: e.target.value })}
-                          placeholder="e.g., 5 Days"
-                        />
-                      </div>
+                    {approvedApplications.length > 0 && (
+                      <>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Course Type *</Label>
+                            <Select value={courseForm.type} onValueChange={(value: any) => setCourseForm({ ...courseForm, type: value })} disabled={!courseForm.master_course_id}>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {courseTypes.map(type => (
+                                  <SelectItem key={type} value={type}>{type}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
 
-                      <div className="space-y-2">
-                        <Label>Mode *</Label>
-                        <Select value={courseForm.mode} onValueChange={(value: any) => setCourseForm({ ...courseForm, mode: value })}>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {courseModes.map(mode => (
-                              <SelectItem key={mode} value={mode}>{mode.charAt(0).toUpperCase() + mode.slice(1)}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                          <div className="space-y-2">
+                            <Label>Duration *</Label>
+                            <Input
+                              value={courseForm.duration}
+                              onChange={(e) => setCourseForm({ ...courseForm, duration: e.target.value })}
+                              placeholder="e.g., 5 Days"
+                              disabled={!courseForm.master_course_id}
+                            />
+                          </div>
 
-                      <div className="space-y-2">
-                        <Label>Fees (₹) *</Label>
-                        <Input
-                          type="number"
-                          value={courseForm.fees}
-                          onChange={(e) => setCourseForm({ ...courseForm, fees: e.target.value })}
-                          placeholder="18500"
-                        />
-                      </div>
+                          <div className="space-y-2">
+                            <Label>Mode *</Label>
+                            <Select value={courseForm.mode} onValueChange={(value: any) => setCourseForm({ ...courseForm, mode: value })} disabled={!courseForm.master_course_id}>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {courseModes.map(mode => (
+                                  <SelectItem key={mode} value={mode}>{mode.charAt(0).toUpperCase() + mode.slice(1)}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
 
-                      <div className="space-y-2">
-                        <Label>Validity (Months)</Label>
-                        <Input
-                          type="number"
-                          value={courseForm.validity_months}
-                          onChange={(e) => setCourseForm({ ...courseForm, validity_months: e.target.value })}
-                          placeholder="60"
-                        />
-                      </div>
+                          <div className="space-y-2">
+                            <Label>Fees (₹) *</Label>
+                            <Input
+                              type="number"
+                              value={courseForm.fees}
+                              onChange={(e) => setCourseForm({ ...courseForm, fees: e.target.value })}
+                              placeholder="18500"
+                              disabled={!courseForm.master_course_id}
+                            />
+                          </div>
 
-                      <div className="space-y-2">
-                        <Label>Accreditation Reference</Label>
-                        <Input
-                          value={courseForm.accreditation_ref}
-                          onChange={(e) => setCourseForm({ ...courseForm, accreditation_ref: e.target.value })}
-                          placeholder="STCW-VI/1"
-                        />
-                      </div>
-                    </div>
+                          <div className="space-y-2">
+                            <Label>Validity (Months)</Label>
+                            <Input
+                              type="number"
+                              value={courseForm.validity_months}
+                              onChange={(e) => setCourseForm({ ...courseForm, validity_months: e.target.value })}
+                              placeholder="60"
+                              disabled={!courseForm.master_course_id}
+                            />
+                          </div>
 
-                    <div className="space-y-2">
-                      <Label>Description</Label>
-                      <Textarea
-                        value={courseForm.description}
-                        onChange={(e) => setCourseForm({ ...courseForm, description: e.target.value })}
-                        placeholder="Course description..."
-                        rows={3}
-                      />
-                    </div>
+                          <div className="space-y-2">
+                            <Label>Accreditation Reference</Label>
+                            <Input
+                              value={courseForm.accreditation_ref}
+                              onChange={(e) => setCourseForm({ ...courseForm, accreditation_ref: e.target.value })}
+                              placeholder="STCW-VI/1"
+                              disabled={!courseForm.master_course_id}
+                            />
+                          </div>
+                        </div>
 
-                    <Button onClick={handleCreateCourse} className="w-full">
-                      Create Course
-                    </Button>
+                        <div className="space-y-2">
+                          <Label>Description</Label>
+                          <Textarea
+                            value={courseForm.description}
+                            onChange={(e) => setCourseForm({ ...courseForm, description: e.target.value })}
+                            placeholder="Course description..."
+                            rows={3}
+                            disabled={!courseForm.master_course_id}
+                          />
+                        </div>
+
+                        <Button onClick={handleCreateCourse} className="w-full" disabled={!courseForm.master_course_id}>
+                          Publish Course
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </DialogContent>
               </Dialog>

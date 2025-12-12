@@ -251,6 +251,7 @@ export const api = {
     validity_months?: number
     accreditation_ref?: string
     master_course_id?: string
+    application_id?: string
     instructor_name?: string
     thumbnail_url?: string
     category?: string
@@ -259,12 +260,13 @@ export const api = {
     course_overview?: string
     additional_notes?: string
     currency?: 'INR' | 'USD' | 'EUR' | 'AED'
+    status?: 'active' | 'inactive' | 'archived'
   }): Promise<Course> {
     const { data, error } = await supabase
       .from('courses')
       .insert({
         ...courseData,
-        status: 'active',
+        status: courseData.status || 'inactive',
         currency: courseData.currency || 'INR'
       })
       .select()
@@ -272,6 +274,29 @@ export const api = {
 
     if (error) throw error
     return data
+  },
+
+  async getApprovedCourseApplications(instid: string): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('institute_course_applications')
+      .select(`
+        application_id,
+        master_course_id,
+        status,
+        commission_percent,
+        master_courses (
+          course_name,
+          course_code,
+          category,
+          description
+        )
+      `)
+      .eq('instid', instid)
+      .eq('status', 'approved')
+      .order('master_courses(course_name)', { ascending: true })
+
+    if (error) throw error
+    return data || []
   },
 
   async listBatches(filters?: { courseid?: string }): Promise<Batch[]> {

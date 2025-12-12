@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -8,10 +9,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Copy, Check } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 
-interface SignInProps {
-  onNavigate: (page: string) => void
-}
-
 const demoCredentials = [
   { email: 'admin@maritimetraining.in', password: 'hashed_password', role: 'Super Admin', description: 'Platform administration & institute verification' },
   { email: 'admin@mumbaimaritime.edu.in', password: 'hashed_password', role: 'Institute', description: 'Mumbai Maritime Institute' },
@@ -20,23 +17,25 @@ const demoCredentials = [
   { email: 'priya.singh@seafarer.in', password: 'hashed_password', role: 'Seafarer', description: 'Second Officer - Browse & book courses' },
 ]
 
-export default function SignIn({ onNavigate }: SignInProps) {
+export default function SignIn() {
   const { signIn, user } = useAuth()
+  const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null)
 
-  if (user) {
-    const dashboardMap = {
-      admin: 'admin-dashboard',
-      instructor: 'instructor-dashboard',
-      student: 'student-dashboard'
+  useEffect(() => {
+    if (user) {
+      const dashboardMap = {
+        admin: '/admin',
+        institute: '/institutes',
+        student: '/student'
+      }
+      navigate(dashboardMap[user.role as keyof typeof dashboardMap] || '/')
     }
-    onNavigate(dashboardMap[user.role as keyof typeof dashboardMap] || 'home')
-    return null
-  }
+  }, [user, navigate])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -132,7 +131,7 @@ export default function SignIn({ onNavigate }: SignInProps) {
                         type="button"
                         variant="outline"
                         size="sm"
-                        onClick={() => onNavigate('sign-up-student')}
+                        onClick={() => navigate('/sign-up')}
                         className="flex-1"
                       >
                         Student Signup
@@ -141,7 +140,7 @@ export default function SignIn({ onNavigate }: SignInProps) {
                         type="button"
                         variant="outline"
                         size="sm"
-                        onClick={() => onNavigate('register-institute')}
+                        onClick={() => navigate('/register-institute')}
                         className="flex-1"
                       >
                         Institute Signup

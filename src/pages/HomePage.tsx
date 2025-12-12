@@ -1,18 +1,13 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { mockCourses, type Course } from '@/data/mock'
 import { Star, Clock, Users, Award, Anchor, Ship, TrendingUp } from 'lucide-react'
 
-
-// Use Course type from mock data
-
-interface HomePageProps {
-  onNavigate: (page: string, courseId?: string) => void
-}
-
-export default function HomePage({ onNavigate }: HomePageProps) {
+export default function HomePage() {
+  const navigate = useNavigate()
   const [featuredCourses, setFeaturedCourses] = useState<Course[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
@@ -58,10 +53,10 @@ export default function HomePage({ onNavigate }: HomePageProps) {
                 Learn from experienced maritime professionals. Get certified. Build your career at sea with specialized courses designed for merchant navy personnel.
               </p>
               <div className="flex flex-wrap gap-4">
-                <Button size="lg" onClick={() => onNavigate('catalog')}>
+                <Button size="lg" onClick={() => navigate('/courses')}>
                   Explore Courses
                 </Button>
-                <Button size="lg" variant="outline" onClick={() => onNavigate('catalog')}>
+                <Button size="lg" variant="outline" onClick={() => navigate('/courses')}>
                   Learn More
                 </Button>
               </div>
@@ -174,7 +169,7 @@ export default function HomePage({ onNavigate }: HomePageProps) {
               <h2 className="text-3xl font-bold mb-2">Featured Courses</h2>
               <p className="text-muted-foreground">Start learning with our most popular maritime courses</p>
             </div>
-            <Button variant="outline" onClick={() => onNavigate('catalog')}>
+            <Button variant="outline" onClick={() => navigate('/courses')}>
               View All Courses
             </Button>
           </div>
@@ -197,7 +192,7 @@ export default function HomePage({ onNavigate }: HomePageProps) {
                 <Card 
                   key={course.id} 
                   className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group"
-                  onClick={() => onNavigate('course', course.id)}
+                  onClick={() => navigate(`/course/${course.id}`)}
                 >
                   <div className="relative h-48 overflow-hidden">
                     <img
@@ -255,7 +250,7 @@ export default function HomePage({ onNavigate }: HomePageProps) {
           <p className="text-lg text-white/90 mb-8 max-w-2xl mx-auto">
             Join thousands of maritime professionals advancing their careers through SeaLearn
           </p>
-          <Button size="lg" variant="secondary" onClick={() => onNavigate('catalog')}>
+          <Button size="lg" variant="secondary" onClick={() => navigate('/courses')}>
             Start Learning Today
           </Button>
         </div>

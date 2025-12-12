@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Search, Menu, BookOpen, ChevronRight, Anchor, Ship, Compass } from 'lucide-react'
@@ -6,11 +7,6 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { useAuth } from '@/hooks/useAuth'
 import { UserMenu } from '@/components/UserMenu'
 import { RoleSwitcher } from '@/components/RoleSwitcher'
-
-interface NavbarProps {
-  onNavigate: (page: string) => void
-  currentPage: string
-}
 
 // Merchant Navy Course Categories with Specializations
 const courseCategories = [
@@ -56,8 +52,10 @@ const courseCategories = [
   }
 ]
 
-export default function Navbar({ onNavigate, currentPage }: NavbarProps) {
+export default function Navbar() {
   const { user } = useAuth()
+  const navigate = useNavigate()
+  const location = useLocation()
   const [searchQuery, setSearchQuery] = useState('')
   const [showCoursesMenu, setShowCoursesMenu] = useState(false)
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
@@ -87,7 +85,7 @@ export default function Navbar({ onNavigate, currentPage }: NavbarProps) {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
     if (searchQuery.trim()) {
-      onNavigate('catalog')
+      navigate('/courses')
     }
   }
 
@@ -105,69 +103,75 @@ export default function Navbar({ onNavigate, currentPage }: NavbarProps) {
     }
   }
 
-  const getDashboardPage = () => {
-    if (!user) return 'dashboard'
+  const getDashboardRoute = () => {
+    if (!user) return '/student'
     switch (user.role) {
       case 'admin':
-        return 'admin-dashboard'
+        return '/admin'
       case 'institute':
-        return 'instructor-dashboard'
+        return '/institutes'
       case 'student':
-        return 'student-dashboard'
+        return '/student'
       default:
-        return 'dashboard'
+        return '/student'
     }
   }
 
-  const NavLinks = ({ mobile = false }: { mobile?: boolean }) => (
-    <>
-      {!user || user.role === 'student' ? (
-        <>
-          <button
-            onClick={() => onNavigate('home')}
-            className={`${mobile ? 'text-left w-full px-4 py-2 text-foreground hover:bg-primary/20' : 'text-white drop-shadow-md'} text-sm font-medium transition-all duration-200 ${
-              currentPage === 'home' ? (mobile ? 'bg-primary/10 text-primary' : 'text-white/90 border-b-2 border-white') : 'hover:text-white/80'
-            }`}
-          >
-            Home
-          </button>
-          {mobile ? (
+  const NavLinks = ({ mobile = false }: { mobile?: boolean }) => {
+    const isHome = location.pathname === '/'
+    const isCourses = location.pathname === '/courses' || location.pathname.startsWith('/course/')
+    const isDashboard = location.pathname.includes('/admin') || location.pathname.includes('/student') || location.pathname.includes('/institutes')
+
+    return (
+      <>
+        {!user || user.role === 'student' ? (
+          <>
             <button
-              onClick={() => onNavigate('catalog')}
-              className={`text-left w-full px-4 py-2 text-foreground hover:bg-primary/20 text-sm font-medium transition-all duration-200 ${
-                currentPage === 'catalog' ? 'bg-primary/10 text-primary' : ''
+              onClick={() => navigate('/')}
+              className={`${mobile ? 'text-left w-full px-4 py-2 text-foreground hover:bg-primary/20' : 'text-white drop-shadow-md'} text-sm font-medium transition-all duration-200 ${
+                isHome ? (mobile ? 'bg-primary/10 text-primary' : 'text-white/90 border-b-2 border-white') : 'hover:text-white/80'
               }`}
             >
-              Browse Courses
+              Home
             </button>
-          ) : (
-            <div className="relative">
+            {mobile ? (
               <button
-                ref={coursesButtonRef}
-                onMouseEnter={() => setShowCoursesMenu(true)}
-                onClick={() => onNavigate('catalog')}
-                className={`text-white drop-shadow-md text-sm font-medium transition-all duration-200 ${
-                  currentPage === 'catalog' ? 'text-white/90 border-b-2 border-white' : 'hover:text-white/80'
+                onClick={() => navigate('/courses')}
+                className={`text-left w-full px-4 py-2 text-foreground hover:bg-primary/20 text-sm font-medium transition-all duration-200 ${
+                  isCourses ? 'bg-primary/10 text-primary' : ''
                 }`}
               >
                 Browse Courses
               </button>
-            </div>
-          )}
-        </>
-      ) : null}
-      {user && (
-        <button
-          onClick={() => onNavigate(getDashboardPage())}
-          className={`${mobile ? 'text-left w-full px-4 py-2 text-foreground hover:bg-primary/20' : 'text-white drop-shadow-md'} text-sm font-medium transition-all duration-200 ${
-            currentPage.includes('dashboard') ? (mobile ? 'bg-primary/10 text-primary' : 'text-white/90 border-b-2 border-white') : 'hover:text-white/80'
-          }`}
-        >
-          {getDashboardLabel()}
-        </button>
-      )}
-    </>
-  )
+            ) : (
+              <div className="relative">
+                <button
+                  ref={coursesButtonRef}
+                  onMouseEnter={() => setShowCoursesMenu(true)}
+                  onClick={() => navigate('/courses')}
+                  className={`text-white drop-shadow-md text-sm font-medium transition-all duration-200 ${
+                    isCourses ? 'text-white/90 border-b-2 border-white' : 'hover:text-white/80'
+                  }`}
+                >
+                  Browse Courses
+                </button>
+              </div>
+            )}
+          </>
+        ) : null}
+        {user && (
+          <button
+            onClick={() => navigate(getDashboardRoute())}
+            className={`${mobile ? 'text-left w-full px-4 py-2 text-foreground hover:bg-primary/20' : 'text-white drop-shadow-md'} text-sm font-medium transition-all duration-200 ${
+              isDashboard ? (mobile ? 'bg-primary/10 text-primary' : 'text-white/90 border-b-2 border-white') : 'hover:text-white/80'
+            }`}
+          >
+            {getDashboardLabel()}
+          </button>
+        )}
+      </>
+    )
+  }
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b bg-gradient-to-r from-primary via-accent to-primary/80 shadow-lg">
@@ -181,7 +185,7 @@ export default function Navbar({ onNavigate, currentPage }: NavbarProps) {
       <div className="container mx-auto px-4 relative z-10">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <div className="flex items-center gap-2 cursor-pointer group" onClick={() => onNavigate('home')}>
+          <div className="flex items-center gap-2 cursor-pointer group" onClick={() => navigate('/')}>
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/20 group-hover:bg-white/30 transition-all duration-200 backdrop-blur-sm border border-white/30">
               <BookOpen className="h-6 w-6 text-white drop-shadow-lg" />
             </div>
@@ -222,7 +226,7 @@ export default function Navbar({ onNavigate, currentPage }: NavbarProps) {
                               setActiveCategory(category.id)
                               setActiveSpecialization(null)
                             }}
-                            onClick={() => onNavigate('catalog')}
+                            onClick={() => navigate('/courses')}
                             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all duration-200 ${
                               activeCategory === category.id
                                 ? 'bg-primary text-white shadow-md'
@@ -252,7 +256,7 @@ export default function Navbar({ onNavigate, currentPage }: NavbarProps) {
                               <button
                                 key={spec.id}
                                 onMouseEnter={() => setActiveSpecialization(spec.id)}
-                                onClick={() => onNavigate('catalog')}
+                                onClick={() => navigate('/courses')}
                                 className={`w-full flex items-center gap-2 px-4 py-2.5 rounded-lg text-left transition-all duration-200 ${
                                   activeSpecialization === spec.id
                                     ? 'bg-accent text-accent-foreground shadow-sm'
@@ -286,7 +290,7 @@ export default function Navbar({ onNavigate, currentPage }: NavbarProps) {
                             ?.courses.map((course, idx) => (
                               <button
                                 key={idx}
-                                onClick={() => onNavigate('catalog')}
+                                onClick={() => navigate('/courses')}
                                 className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-left hover:bg-primary/5 border border-transparent hover:border-primary/20 transition-all duration-200 group"
                               >
                                 <div className="h-2 w-2 rounded-full bg-primary/60 group-hover:bg-primary" />
@@ -298,7 +302,7 @@ export default function Navbar({ onNavigate, currentPage }: NavbarProps) {
                         </div>
                         <div className="mt-4 pt-4 border-t border-border">
                           <Button
-                            onClick={() => onNavigate('catalog')}
+                            onClick={() => navigate('/courses')}
                             variant="outline"
                             size="sm"
                             className="w-full"
@@ -337,14 +341,14 @@ export default function Navbar({ onNavigate, currentPage }: NavbarProps) {
             {user ? (
               <>
                 <RoleSwitcher />
-                <UserMenu onNavigate={onNavigate} />
+                <UserMenu />
               </>
             ) : (
               <>
-                <Button variant="ghost" onClick={() => onNavigate('sign-in')} className="hidden sm:inline-flex text-white hover:text-white hover:bg-white/20">
+                <Button variant="ghost" onClick={() => navigate('/sign-in')} className="hidden sm:inline-flex text-white hover:text-white hover:bg-white/20">
                   Sign In
                 </Button>
-                <Button onClick={() => onNavigate('sign-up-student')} className="bg-white text-primary hover:text-primary hover:bg-white/90">
+                <Button onClick={() => navigate('/sign-up')} className="bg-white text-primary hover:text-primary hover:bg-white/90">
                   Get Started
                 </Button>
               </>

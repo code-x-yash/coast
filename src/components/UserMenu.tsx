@@ -1,4 +1,5 @@
 import { useAuth } from '@/hooks/useAuth'
+import { useNavigate } from 'react-router-dom'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,12 +12,9 @@ import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { User, LogOut } from 'lucide-react'
 
-interface UserMenuProps {
-  onNavigate?: (page: string) => void
-}
-
-export function UserMenu({ onNavigate }: UserMenuProps) {
+export function UserMenu() {
   const { user, signOut } = useAuth()
+  const navigate = useNavigate()
 
   if (!user) {
     return null
@@ -24,11 +22,7 @@ export function UserMenu({ onNavigate }: UserMenuProps) {
 
   const handleSignOut = async () => {
     await signOut()
-    if (onNavigate) {
-      onNavigate('home')
-    } else {
-      window.location.href = '/'
-    }
+    navigate('/')
   }
 
   const getInitials = (name: string) => {
@@ -43,13 +37,13 @@ export function UserMenu({ onNavigate }: UserMenuProps) {
   const getRoleDashboard = () => {
     switch (user.role) {
       case 'admin':
-        return 'admin-dashboard'
+        return '/admin'
       case 'institute':
-        return 'instructor-dashboard'
+        return '/institutes'
       case 'student':
-        return 'student-dashboard'
+        return '/student'
       default:
-        return 'home'
+        return '/'
     }
   }
 
@@ -90,7 +84,7 @@ export function UserMenu({ onNavigate }: UserMenuProps) {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          onClick={() => onNavigate?.(getRoleDashboard())}
+          onClick={() => navigate(getRoleDashboard())}
           className="cursor-pointer"
         >
           <User className="mr-2 h-4 w-4" />

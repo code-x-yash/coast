@@ -4,10 +4,12 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { courseService, type Course } from '@/services/courses'
 import { useAuth } from '@/hooks/useAuth'
-import { CheckCircle2, ArrowLeft, MapPin, Calendar, Clock, Phone, Mail, Ship, Building2 } from 'lucide-react'
+import { CheckCircle2, ArrowLeft, MapPin, Calendar, Clock, Phone, Mail, Ship, Building2, Users } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { supabase } from '@/lib/supabase'
 
 export default function CourseDetail() {
   const { courseId } = useParams<{ courseId: string }>()
@@ -16,6 +18,9 @@ export default function CourseDetail() {
   const [course, setCourse] = useState<Course | null>(null)
   const [batches, setBatches] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [showBatchDialog, setShowBatchDialog] = useState(false)
+  const [selectedBatch, setSelectedBatch] = useState<any>(null)
+  const [enrolling, setEnrolling] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -42,7 +47,7 @@ export default function CourseDetail() {
     }
   }
 
-  const handleEnroll = () => {
+  const handleEnrollClick = () => {
     if (!user) {
       toast({
         title: 'Sign In Required',
@@ -52,10 +57,81 @@ export default function CourseDetail() {
       return
     }
 
-    toast({
-      title: 'Contact Institute',
-      description: 'Please contact the institute directly to enroll in this course.',
-    })
+    if (batches.length === 0) {
+      toast({
+        title: 'No Batches Available',
+        description: 'There are no active batches for this course at the moment.',
+        variant: 'destructive'
+      })
+      return
+    }
+
+    setShowBatchDialog(true)
+  }
+
+  const handleBatchSelect = (batch: any) => {
+    setSelectedBatch(batch)
+  }
+
+  const handleConfirmEnrollment = async () => {
+    if (!selectedBatch || !user || !courseId) return
+
+    setEnrolling(true)
+    try {
+      const { data: studentData, error: studentError } = await supabase
+        .from('students')
+        .select('studentid')
+        .eq('userid', user.id)
+        .maybeSingle()
+
+      if (studentError) throw studentError
+      if (!studentData) {
+        toast({
+          title: 'Profile Not Found',
+          description: 'Please complete your profile first.',
+          variant: 'destructive'
+        })
+        return
+      }
+
+      const bookingData = {
+        studentid: studentData.studentid,
+        courseid: courseId,
+        batchid: selectedBatch.batchid,
+        booking_date: new Date().toISOString(),
+        booking_status: 'pending',
+        payment_status: 'pending',
+        amount_paid: course?.fees || 0
+      }
+
+      const { error: bookingError } = await supabase
+        .from('bookings')
+        .insert([bookingData])
+
+      if (bookingError) throw bookingError
+
+      toast({
+        title: 'Enrollment Successful!',
+        description: 'Your booking has been created. Please proceed to payment.',
+      })
+
+      setShowBatchDialog(false)
+      setSelectedBatch(null)
+
+      setTimeout(() => {
+        navigate('/seafarer')
+      }, 2000)
+
+    } catch (error: any) {
+      console.error('Enrollment failed:', error)
+      toast({
+        title: 'Enrollment Failed',
+        description: error.message || 'Please try again later.',
+        variant: 'destructive'
+      })
+    } finally {
+      setEnrolling(false)
+    }
   }
 
   if (isLoading) {
@@ -164,10 +240,17 @@ export default function CourseDetail() {
                   <Button
                     size="lg"
                     className="w-full"
-                    onClick={handleEnroll}
+                    onClick={handleEnrollClick}
+                    disabled={batches.length === 0}
                   >
-                    Contact Institute to Enroll
+                    {batches.length === 0 ? 'No Batches Available' : 'Enroll Now'}
                   </Button>
+
+                  {batches.length === 0 && (
+                    <p className="text-xs text-center text-muted-foreground">
+                      Contact institute for upcoming batches
+                    </p>
+                  )}
 
                   <Separator />
 
@@ -237,15 +320,26 @@ export default function CourseDetail() {
                     key={batch.batchid}
                     className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
                   >
-                    <div>
+                    <div className="flex-1">
                       <p className="font-medium">{batch.batch_name || `Batch ${batch.batchid.slice(0, 8)}`}</p>
                       <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-                        <span>Start: {new Date(batch.start_date).toLocaleDateString()}</span>
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-4 w-4" />
+                          <span>Start: {new Date(batch.start_date).toLocaleDateString()}</span>
+                        </div>
                         <span>•</span>
                         <span>End: {new Date(batch.end_date).toLocaleDateString()}</span>
                       </div>
+                      {batch.max_students && (
+                        <div className="flex items-center gap-1 mt-1 text-sm text-muted-foreground">
+                          <Users className="h-4 w-4" />
+                          <span>Capacity: {batch.max_students} students</span>
+                        </div>
+                      )}
                     </div>
-                    <Badge>{batch.batch_status}</Badge>
+                    <Badge variant={batch.batch_status === 'active' ? 'default' : 'secondary'}>
+                      {batch.batch_status}
+                    </Badge>
                   </div>
                 ))}
               </div>
@@ -253,6 +347,82 @@ export default function CourseDetail() {
           </Card>
         </div>
       )}
+
+      <Dialog open={showBatchDialog} onOpenChange={setShowBatchDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Select a Batch</DialogTitle>
+            <DialogDescription>
+              Choose a batch to enroll in. You will proceed to payment after selection.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 max-h-96 overflow-y-auto">
+            {batches.filter(b => b.batch_status === 'active').map((batch) => (
+              <div
+                key={batch.batchid}
+                className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                  selectedBatch?.batchid === batch.batchid
+                    ? 'border-primary bg-primary/5 ring-2 ring-primary'
+                    : 'hover:border-primary/50 hover:bg-muted/50'
+                }`}
+                onClick={() => handleBatchSelect(batch)}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <p className="font-semibold">{batch.batch_name || `Batch ${batch.batchid.slice(0, 8)}`}</p>
+                    <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-4 w-4" />
+                        <span>{new Date(batch.start_date).toLocaleDateString()}</span>
+                      </div>
+                      <span>to</span>
+                      <span>{new Date(batch.end_date).toLocaleDateString()}</span>
+                    </div>
+                    {batch.max_students && (
+                      <div className="flex items-center gap-1 mt-1 text-sm text-muted-foreground">
+                        <Users className="h-4 w-4" />
+                        <span>Max {batch.max_students} students</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="ml-4">
+                    {selectedBatch?.batchid === batch.batchid && (
+                      <CheckCircle2 className="h-6 w-6 text-primary" />
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {batches.filter(b => b.batch_status === 'active').length === 0 && (
+            <p className="text-center text-muted-foreground py-8">
+              No active batches available at the moment.
+            </p>
+          )}
+
+          <div className="flex gap-3 pt-4 border-t">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => {
+                setShowBatchDialog(false)
+                setSelectedBatch(null)
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="flex-1"
+              onClick={handleConfirmEnrollment}
+              disabled={!selectedBatch || enrolling}
+            >
+              {enrolling ? 'Processing...' : 'Proceed to Payment'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

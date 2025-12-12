@@ -14,7 +14,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Building2, BookOpen, Calendar, Users, Award, TrendingUp, Plus, Upload, CheckCircle, AlertCircle, AlertTriangle, Clock } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { ReactivationRequestForm } from '@/components/ReactivationRequestForm'
-import { maritimeApi, courseTypes, courseModes, Institute, Course, Batch, Booking, Certificate, ReactivationRequest } from '@/services/maritime'
+import { api, courseTypes, courseModes, Institute, Course, Batch, Booking, Certificate, ReactivationRequest } from '@/services/api'
 
 export default function InstructorDashboard() {
   const navigate = useNavigate()
@@ -61,34 +61,34 @@ export default function InstructorDashboard() {
     try {
       setLoading(true)
 
-      const instituteData = await maritimeApi.getInstituteByUserId(user.id)
+      const instituteData = await api.getInstituteByUserId(user.id)
       setInstitute(instituteData)
 
       if (instituteData) {
-        const expired = maritimeApi.isInstituteExpired(instituteData)
+        const expired = api.isInstituteExpired(instituteData)
         setIsExpired(expired)
 
         if (expired) {
-          const pendingRequest = await maritimeApi.getReactivationRequestByInstId(instituteData.instid)
+          const pendingRequest = await api.getReactivationRequestByInstId(instituteData.instid)
           setReactivationRequest(pendingRequest)
         }
 
-        const instituteCourses = await maritimeApi.listCourses({ instid: instituteData.instid })
+        const instituteCourses = await api.listCourses({ instid: instituteData.instid })
         setCourses(instituteCourses)
 
-        const allBatches = await maritimeApi.listBatches()
+        const allBatches = await api.listBatches()
         const instituteBatches = allBatches.filter(b =>
           instituteCourses.some(c => c.courseid === b.courseid)
         )
         setBatches(instituteBatches)
 
-        const allBookings = await maritimeApi.listBookings()
+        const allBookings = await api.listBookings()
         const instituteBookings = allBookings.filter(b =>
           instituteBatches.some(batch => batch.batchid === b.batchid)
         )
         setBookings(instituteBookings)
 
-        const allCerts = await maritimeApi.listCertificates()
+        const allCerts = await api.listCertificates()
         const instituteCerts = allCerts.filter(c =>
           instituteCourses.some(course => course.courseid === c.courseid)
         )
@@ -110,7 +110,7 @@ export default function InstructorDashboard() {
     if (!institute) return
 
     try {
-      await maritimeApi.createCourse({
+      await api.createCourse({
         ...courseForm,
         instid: institute.instid,
         fees: parseFloat(courseForm.fees),
@@ -147,7 +147,7 @@ export default function InstructorDashboard() {
     if (!selectedCourse) return
 
     try {
-      await maritimeApi.createBatch({
+      await api.createBatch({
         courseid: selectedCourse,
         ...batchForm,
         seats_total: parseInt(batchForm.seats_total)

@@ -103,23 +103,23 @@ export default function Navbar() {
   }
 
   const getDashboardRoute = () => {
-    if (!user) return '/student'
+    if (!user) return '/seafarer'
     switch (user.role) {
       case 'admin':
         return '/admin'
       case 'institute':
         return '/institutes'
       case 'student':
-        return '/student'
+        return '/seafarer'
       default:
-        return '/student'
+        return '/seafarer'
     }
   }
 
   const NavLinks = ({ mobile = false }: { mobile?: boolean }) => {
     const isHome = location.pathname === '/'
     const isCourses = location.pathname === '/courses' || location.pathname.startsWith('/course/')
-    const isDashboard = location.pathname.includes('/admin') || location.pathname.includes('/student') || location.pathname.includes('/institutes')
+    const isDashboard = location.pathname.includes('/admin') || location.pathname.includes('/seafarer') || location.pathname.includes('/institutes')
 
     return (
       <>

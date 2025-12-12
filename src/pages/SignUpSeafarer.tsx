@@ -15,7 +15,7 @@ const maritimeRanks = [
   'Engine Cadet', 'Fourth Engineer', 'Third Engineer', 'Second Engineer', 'Chief Engineer'
 ]
 
-export default function SignUpStudent() {
+export default function SignUpSeafarer() {
   const navigate = useNavigate()
   const { signUpStudent, user } = useAuth()
   const [formData, setFormData] = useState({
@@ -34,7 +34,7 @@ export default function SignUpStudent() {
   const [loading, setLoading] = useState(false)
 
   if (user) {
-    navigate('/student')
+    navigate('/seafarer')
     return null
   }
 
@@ -74,7 +74,7 @@ export default function SignUpStudent() {
         title: 'Welcome to Maritime Training Platform!',
         description: 'Your seafarer account has been created successfully.',
       })
-      navigate('/student')
+      navigate('/seafarer')
     } catch (err: any) {
       setError(err.message || 'Failed to create account')
     } finally {

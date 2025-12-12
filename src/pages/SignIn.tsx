@@ -22,7 +22,7 @@ export default function SignIn() {
       const dashboardMap = {
         admin: '/admin',
         institute: '/institutes',
-        student: '/student'
+        student: '/seafarer'
       }
       navigate(dashboardMap[user.role as keyof typeof dashboardMap] || '/')
     }
@@ -121,7 +121,7 @@ export default function SignIn() {
                   className="w-full"
                   onClick={() => navigate('/sign-up')}
                 >
-                  Sign Up as Student
+                  Sign Up as Seafarer
                 </Button>
                 <Button
                   variant="outline"

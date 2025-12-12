@@ -165,7 +165,7 @@ export default function CourseDetail() {
                     <Button
                       size="lg"
                       className="w-full"
-                      onClick={() => navigate(`/student/learn/${courseId}`)}
+                      onClick={() => navigate(`/seafarer/learn/${courseId}`)}
                     >
                       Continue Learning
                     </Button>

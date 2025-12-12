@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AlertCircle, CheckCircle, RefreshCw } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
-import { maritimeApi, Institute } from '@/services/maritime'
+import { api, Institute } from '@/services/api'
 
 interface ReactivationRequestFormProps {
   institute: Institute
@@ -50,11 +50,11 @@ export function ReactivationRequestForm({ institute, onSubmitSuccess }: Reactiva
 
     try {
       setLoading(true)
-      await maritimeApi.createReactivationRequest({
+      await api.createReactivationRequest({
         instid: institute.instid,
-        new_accreditation_no: form.new_accreditation_no,
-        new_valid_from: form.new_valid_from,
-        new_valid_to: form.new_valid_to
+        accreditation_no: form.new_accreditation_no,
+        valid_from: form.new_valid_from,
+        valid_to: form.new_valid_to
       })
 
       toast({

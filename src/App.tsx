@@ -7,9 +7,9 @@ import CourseCatalog from '@/pages/CourseCatalog'
 import CourseDetail from '@/pages/CourseDetail'
 import LearningInterface from '@/pages/LearningInterface'
 import SignIn from '@/pages/SignIn'
-import SignUpStudent from '@/pages/SignUpStudent'
+import SignUpSeafarer from '@/pages/SignUpSeafarer'
 import RegisterInstitute from '@/pages/RegisterInstitute'
-import StudentDashboard from '@/pages/student/StudentDashboard'
+import SeafarerDashboard from '@/pages/seafarer/SeafarerDashboard'
 import InstructorDashboard from '@/pages/instructor/InstructorDashboard'
 import AdminDashboard from '@/pages/admin/AdminDashboard'
 import NotFound from '@/pages/NotFound'
@@ -27,15 +27,15 @@ function App() {
           </Route>
 
           <Route path="/sign-in" element={<SignIn />} />
-          <Route path="/sign-up" element={<SignUpStudent />} />
+          <Route path="/sign-up" element={<SignUpSeafarer />} />
           <Route path="/register-institute" element={<RegisterInstitute />} />
 
-          <Route path="/student" element={<Layout />}>
+          <Route path="/seafarer" element={<Layout />}>
             <Route
               index
               element={
                 <ProtectedRoute allowedRoles={['student']}>
-                  <StudentDashboard />
+                  <SeafarerDashboard />
                 </ProtectedRoute>
               }
             />

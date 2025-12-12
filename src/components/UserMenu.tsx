@@ -41,7 +41,7 @@ export function UserMenu() {
       case 'institute':
         return '/institutes'
       case 'student':
-        return '/student'
+        return '/seafarer'
       default:
         return '/'
     }
@@ -54,7 +54,7 @@ export function UserMenu() {
       case 'institute':
         return 'Training Institute'
       case 'student':
-        return 'Seafarer/Student'
+        return 'Seafarer'
       default:
         return user.role
     }

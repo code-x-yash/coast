@@ -1,5 +1,7 @@
 import { supabase } from '@/lib/supabase'
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+
 export interface Institute {
   instid: string
   userid: string
@@ -72,7 +74,7 @@ export interface Certificate {
   created_at?: string
 }
 
-export interface Student {
+export interface Seafarer {
   studid: string
   userid: string
   dgshipping_id?: string
@@ -120,35 +122,28 @@ export interface ReactivationRequest {
 export const courseTypes = ['STCW', 'Refresher', 'Technical', 'Other'] as const
 export const courseModes = ['offline', 'online', 'hybrid'] as const
 
-export const maritimeApi = {
+async function getAuthHeaders(): Promise<HeadersInit> {
+  const { data: { session } } = await supabase.auth.getSession()
+
+  return {
+    'Content-Type': 'application/json',
+    ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {})
+  }
+}
+
+export const api = {
+  async getSeafarerByUserId(userId: string): Promise<Seafarer | null> {
+    const { data, error } = await supabase
+      .from('students')
+      .select('*')
+      .eq('userid', userId)
+      .maybeSingle()
+
+    if (error) throw error
+    return data
+  },
+
   async getInstituteByUserId(userId: string): Promise<Institute | null> {
-    const instituteData = localStorage.getItem('institute_data')
-    const userData = localStorage.getItem('maritime_user')
-
-    if (instituteData && userData) {
-      const institute = JSON.parse(instituteData)
-      const user = JSON.parse(userData)
-
-      if (user.id === userId && user.role === 'institute') {
-        return {
-          instid: userId,
-          userid: userId,
-          name: institute.instituteName || 'My Institute',
-          accreditation_no: 'DGS-2024-001',
-          valid_from: '2024-01-01',
-          valid_to: '2026-12-31',
-          contact_email: user.email,
-          contact_phone: user.phone,
-          address: 'Institute Address',
-          city: 'Mumbai',
-          state: 'Maharashtra',
-          verified_status: 'verified',
-          documents: [],
-          created_at: new Date().toISOString()
-        }
-      }
-    }
-
     const { data, error } = await supabase
       .from('institutes')
       .select('*')
@@ -178,20 +173,27 @@ export const maritimeApi = {
     return data
   },
 
-  async listCourses(filters?: { instid?: string }): Promise<Course[]> {
-    const mockCourses = localStorage.getItem('mock_courses')
-    if (mockCourses && filters?.instid) {
-      const courses = JSON.parse(mockCourses)
-      return courses.filter((c: Course) => c.instid === filters.instid)
-    }
-
+  async listCourses(filters?: { instid?: string; type?: string; mode?: string; search?: string }): Promise<Course[]> {
     let query = supabase
       .from('courses')
       .select('*')
+      .eq('status', 'active')
       .order('created_at', { ascending: false })
 
     if (filters?.instid) {
       query = query.eq('instid', filters.instid)
+    }
+
+    if (filters?.type) {
+      query = query.eq('type', filters.type)
+    }
+
+    if (filters?.mode) {
+      query = query.eq('mode', filters.mode)
+    }
+
+    if (filters?.search) {
+      query = query.ilike('title', `%${filters.search}%`)
     }
 
     const { data, error } = await query
@@ -210,27 +212,8 @@ export const maritimeApi = {
     description?: string
     validity_months?: number
     accreditation_ref?: string
+    master_course_id?: string
   }): Promise<Course> {
-    const userData = localStorage.getItem('maritime_user')
-    if (userData) {
-      const user = JSON.parse(userData)
-      if (user.role === 'institute') {
-        const newCourse: Course = {
-          courseid: Math.random().toString(36).substring(7),
-          ...courseData,
-          status: 'active',
-          created_at: new Date().toISOString()
-        }
-
-        const mockCourses = localStorage.getItem('mock_courses')
-        const courses = mockCourses ? JSON.parse(mockCourses) : []
-        courses.push(newCourse)
-        localStorage.setItem('mock_courses', JSON.stringify(courses))
-
-        return newCourse
-      }
-    }
-
     const { data, error } = await supabase
       .from('courses')
       .insert({
@@ -244,16 +227,17 @@ export const maritimeApi = {
     return data
   },
 
-  async listBatches(): Promise<Batch[]> {
-    const mockBatches = localStorage.getItem('mock_batches')
-    if (mockBatches) {
-      return JSON.parse(mockBatches)
-    }
-
-    const { data, error } = await supabase
+  async listBatches(filters?: { courseid?: string }): Promise<Batch[]> {
+    let query = supabase
       .from('batches')
       .select('*')
       .order('start_date', { ascending: false })
+
+    if (filters?.courseid) {
+      query = query.eq('courseid', filters.courseid)
+    }
+
+    const { data, error } = await query
 
     if (error) throw error
     return data || []
@@ -268,27 +252,6 @@ export const maritimeApi = {
     trainer?: string
     location?: string
   }): Promise<Batch> {
-    const userData = localStorage.getItem('maritime_user')
-    if (userData) {
-      const user = JSON.parse(userData)
-      if (user.role === 'institute') {
-        const newBatch: Batch = {
-          batchid: Math.random().toString(36).substring(7),
-          ...batchData,
-          seats_booked: 0,
-          batch_status: 'upcoming',
-          created_at: new Date().toISOString()
-        }
-
-        const mockBatches = localStorage.getItem('mock_batches')
-        const batches = mockBatches ? JSON.parse(mockBatches) : []
-        batches.push(newBatch)
-        localStorage.setItem('mock_batches', JSON.stringify(batches))
-
-        return newBatch
-      }
-    }
-
     const { data, error } = await supabase
       .from('batches')
       .insert({
@@ -303,31 +266,98 @@ export const maritimeApi = {
     return data
   },
 
-  async listBookings(): Promise<Booking[]> {
-    const mockBookings = localStorage.getItem('mock_bookings')
-    if (mockBookings) {
-      return JSON.parse(mockBookings)
-    }
-
-    const { data, error } = await supabase
+  async listBookings(filters?: { studid?: string; batchid?: string }): Promise<Booking[]> {
+    let query = supabase
       .from('bookings')
       .select('*')
       .order('booking_date', { ascending: false })
+
+    if (filters?.studid) {
+      query = query.eq('studid', filters.studid)
+    }
+
+    if (filters?.batchid) {
+      query = query.eq('batchid', filters.batchid)
+    }
+
+    const { data, error } = await query
 
     if (error) throw error
     return data || []
   },
 
-  async listCertificates(): Promise<Certificate[]> {
-    const mockCertificates = localStorage.getItem('mock_certificates')
-    if (mockCertificates) {
-      return JSON.parse(mockCertificates)
+  async createBooking(bookingData: {
+    studid: string
+    batchid: string
+    amount: number
+  }): Promise<Booking> {
+    const { data: batch } = await supabase
+      .from('batches')
+      .select('seats_total, seats_booked')
+      .eq('batchid', bookingData.batchid)
+      .single()
+
+    if (batch && batch.seats_booked >= batch.seats_total) {
+      throw new Error('Batch is full. No seats available.')
     }
 
+    const { data: existingBooking } = await supabase
+      .from('bookings')
+      .select('*')
+      .eq('studid', bookingData.studid)
+      .eq('batchid', bookingData.batchid)
+      .maybeSingle()
+
+    if (existingBooking) {
+      throw new Error('You have already booked this batch')
+    }
+
+    const confirmationNumber = `BKG-${Date.now()}-${Math.random().toString(36).substring(7).toUpperCase()}`
+
     const { data, error } = await supabase
+      .from('bookings')
+      .insert({
+        ...bookingData,
+        confirmation_number: confirmationNumber,
+        payment_status: 'pending',
+        attendance_status: 'not_started',
+        booking_date: new Date().toISOString()
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+
+    const { error: batchError } = await supabase
+      .from('batches')
+      .update({ seats_booked: (batch?.seats_booked || 0) + 1 })
+      .eq('batchid', bookingData.batchid)
+
+    if (batchError) throw batchError
+
+    return data
+  },
+
+  async updatePaymentStatus(bookid: string, status: 'pending' | 'completed' | 'failed' | 'refunded'): Promise<void> {
+    const { error } = await supabase
+      .from('bookings')
+      .update({ payment_status: status })
+      .eq('bookid', bookid)
+
+    if (error) throw error
+  },
+
+  async listCertificates(studid?: string): Promise<Certificate[]> {
+    let query = supabase
       .from('certificates')
       .select('*')
       .order('issue_date', { ascending: false })
+
+    if (studid) {
+      query = query.eq('studid', studid)
+    }
+
+    const { data, error } = await query
 
     if (error) throw error
     return data || []
@@ -355,17 +385,6 @@ export const maritimeApi = {
       })
       .select()
       .single()
-
-    if (error) throw error
-    return data
-  },
-
-  async getStudentByUserId(userId: string): Promise<Student | null> {
-    const { data, error } = await supabase
-      .from('students')
-      .select('*')
-      .eq('userid', userId)
-      .maybeSingle()
 
     if (error) throw error
     return data
@@ -416,84 +435,53 @@ export const maritimeApi = {
     if (error) throw error
   },
 
-  async processReactivationRequest(requestid: string, action: 'approve' | 'reject'): Promise<void> {
+  async processReactivationRequest(requestid: string, action: 'approve' | 'reject', notes?: string): Promise<void> {
     const { error } = await supabase
       .from('institute_reactivation_requests')
       .update({
         status: action === 'approve' ? 'approved' : 'rejected',
-        reviewed_at: new Date().toISOString()
+        reviewed_at: new Date().toISOString(),
+        reviewer_notes: notes
       })
       .eq('requestid', requestid)
 
     if (error) throw error
   },
 
-  async createBooking(bookingData: {
-    studid: string
-    batchid: string
-    amount: number
-  }): Promise<Booking> {
-    const confirmationNumber = `BKG-${Date.now()}-${Math.random().toString(36).substring(7).toUpperCase()}`
+  async getAnalytics() {
+    const [institutes, courses, seafarers, bookings, certificates] = await Promise.all([
+      supabase.from('institutes').select('verified_status'),
+      supabase.from('courses').select('status, fees'),
+      supabase.from('students').select('studid'),
+      supabase.from('bookings').select('payment_status, amount'),
+      supabase.from('certificates').select('dgshipping_uploaded')
+    ])
 
-    const { data, error } = await supabase
-      .from('bookings')
-      .insert({
-        ...bookingData,
-        confirmation_number: confirmationNumber,
-        payment_status: 'pending',
-        attendance_status: 'not_started',
-        booking_date: new Date().toISOString()
-      })
-      .select()
-      .single()
+    const instituteData = institutes.data || []
+    const courseData = courses.data || []
+    const seafarerData = seafarers.data || []
+    const bookingData = bookings.data || []
+    const certificateData = certificates.data || []
 
-    if (error) throw error
-    return data
-  },
-
-  async createPayment(paymentData: {
-    bookid: string
-    amount: number
-    method: string
-    txn_ref: string
-    status: string
-  }): Promise<void> {
-    if (paymentData.status === 'success') {
-      const { error } = await supabase
-        .from('bookings')
-        .update({ payment_status: 'completed' })
-        .eq('bookid', paymentData.bookid)
-
-      if (error) throw error
-
-      const { data: booking } = await supabase
-        .from('bookings')
-        .select('batchid')
-        .eq('bookid', paymentData.bookid)
-        .single()
-
-      if (booking) {
-        await supabase.rpc('increment_batch_seats', { batch_id: booking.batchid })
-      }
-    }
-  },
-
-  getAnalytics() {
     return {
-      totalInstitutes: 0,
-      verifiedInstitutes: 0,
-      pendingInstitutes: 0,
-      rejectedInstitutes: 0,
-      totalCourses: 0,
-      activeCourses: 0,
-      totalStudents: 0,
-      totalBookings: 0,
-      completedBookings: 0,
-      pendingBookings: 0,
-      totalRevenue: 0,
-      totalCertificates: 0,
-      certificatesUploaded: 0,
-      avgCourseFee: 0
+      totalInstitutes: instituteData.length,
+      verifiedInstitutes: instituteData.filter(i => i.verified_status === 'verified').length,
+      pendingInstitutes: instituteData.filter(i => i.verified_status === 'pending').length,
+      rejectedInstitutes: instituteData.filter(i => i.verified_status === 'rejected').length,
+      totalCourses: courseData.length,
+      activeCourses: courseData.filter(c => c.status === 'active').length,
+      totalSeafarers: seafarerData.length,
+      totalBookings: bookingData.length,
+      completedBookings: bookingData.filter(b => b.payment_status === 'completed').length,
+      pendingBookings: bookingData.filter(b => b.payment_status === 'pending').length,
+      totalRevenue: bookingData
+        .filter(b => b.payment_status === 'completed')
+        .reduce((sum, b) => sum + (b.amount || 0), 0),
+      totalCertificates: certificateData.length,
+      certificatesUploaded: certificateData.filter(c => c.dgshipping_uploaded).length,
+      avgCourseFee: courseData.length > 0
+        ? courseData.reduce((sum, c) => sum + (c.fees || 0), 0) / courseData.length
+        : 0
     }
   }
 }

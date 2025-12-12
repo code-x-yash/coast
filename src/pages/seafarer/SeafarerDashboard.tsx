@@ -9,12 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Calendar, MapPin, Clock, Users, Download, AlertCircle, CheckCircle, BookOpen, Award, Filter } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
-import { maritimeApi, courseTypes, courseModes, Student, CourseWithDetails, Booking, Certificate } from '@/services/maritime'
+import { api, courseTypes, courseModes, Seafarer, CourseWithDetails, Booking, Certificate } from '@/services/api'
 
-export default function StudentDashboard() {
+export default function SeafarerDashboard() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const [student, setStudent] = useState<Student | null>(null)
+  const [seafarer, setSeafarer] = useState<Seafarer | null>(null)
   const [courses, setCourses] = useState<CourseWithDetails[]>([])
   const [bookings, setBookings] = useState<Booking[]>([])
   const [certificates, setCertificates] = useState<Certificate[]>([])
@@ -42,12 +42,12 @@ export default function StudentDashboard() {
     try {
       setLoading(true)
 
-      const studentData = await maritimeApi.getStudentByUserId(user.userid)
-      setStudent(studentData)
+      const seafarerData = await api.getSeafarerByUserId(user.userid)
+      setSeafarer(seafarerData)
 
-      const allCourses = await maritimeApi.listCourses()
-      const institutes = await maritimeApi.listInstitutes(true)
-      const allBatches = await maritimeApi.listBatches()
+      const allCourses = await api.listCourses()
+      const institutes = await api.listInstitutes(true)
+      const allBatches = await api.listBatches()
 
       const coursesWithDetails: CourseWithDetails[] = allCourses.map(course => ({
         ...course,
@@ -57,12 +57,12 @@ export default function StudentDashboard() {
 
       setCourses(coursesWithDetails)
 
-      if (studentData) {
-        const studentBookings = await maritimeApi.listBookings({ studid: studentData.studid })
-        setBookings(studentBookings)
+      if (seafarerData) {
+        const seafarerBookings = await api.listBookings({ studid: seafarerData.studid })
+        setBookings(seafarerBookings)
 
-        const studentCertificates = await maritimeApi.listCertificates(studentData.studid)
-        setCertificates(studentCertificates)
+        const seafarerCertificates = await api.listCertificates(seafarerData.studid)
+        setCertificates(seafarerCertificates)
       }
     } catch (error) {
       console.error('Failed to load dashboard:', error)
@@ -104,29 +104,23 @@ export default function StudentDashboard() {
   }
 
   const handleBookCourse = async (batchid: string, amount: number) => {
-    if (!student) {
+    if (!seafarer) {
       toast({
         title: 'Error',
-        description: 'Student profile not found',
+        description: 'Seafarer profile not found',
         variant: 'destructive'
       })
       return
     }
 
     try {
-      const booking = await maritimeApi.createBooking({
-        studid: student.studid,
+      const booking = await api.createBooking({
+        studid: seafarer.studid,
         batchid,
         amount
       })
 
-      await maritimeApi.createPayment({
-        bookid: booking.bookid,
-        amount,
-        method: 'upi',
-        txn_ref: `UPI-${Date.now()}`,
-        status: 'success'
-      })
+      await api.updatePaymentStatus(booking.bookid, 'completed')
 
       toast({
         title: 'Booking Successful!',
@@ -173,7 +167,7 @@ export default function StudentDashboard() {
           <h1 className="text-3xl font-bold mb-2">Seafarer Dashboard</h1>
           <p className="text-muted-foreground">
             Welcome back, {user?.name}
-            {student?.rank && ` - ${student.rank}`}
+            {seafarer?.rank && ` - ${seafarer.rank}`}
           </p>
         </div>
 
@@ -503,19 +497,19 @@ export default function StudentDashboard() {
                       <p><span className="font-medium">Name:</span> {user?.name}</p>
                       <p><span className="font-medium">Email:</span> {user?.email}</p>
                       <p><span className="font-medium">Phone:</span> {user?.phone || 'Not provided'}</p>
-                      {student?.date_of_birth && (
-                        <p><span className="font-medium">Date of Birth:</span> {new Date(student.date_of_birth).toLocaleDateString()}</p>
+                      {seafarer?.date_of_birth && (
+                        <p><span className="font-medium">Date of Birth:</span> {new Date(seafarer.date_of_birth).toLocaleDateString()}</p>
                       )}
-                      <p><span className="font-medium">Nationality:</span> {student?.nationality || 'Not provided'}</p>
+                      <p><span className="font-medium">Nationality:</span> {seafarer?.nationality || 'Not provided'}</p>
                     </div>
                   </div>
 
                   <div className="space-y-4">
                     <h3 className="font-semibold">Maritime Credentials</h3>
                     <div className="space-y-2 text-sm">
-                      <p><span className="font-medium">DGShipping ID:</span> {student?.dgshipping_id || 'Not provided'}</p>
-                      <p><span className="font-medium">Rank:</span> {student?.rank || 'Not provided'}</p>
-                      <p><span className="font-medium">COC Number:</span> {student?.coc_number || 'Not provided'}</p>
+                      <p><span className="font-medium">DGShipping ID:</span> {seafarer?.dgshipping_id || 'Not provided'}</p>
+                      <p><span className="font-medium">Rank:</span> {seafarer?.rank || 'Not provided'}</p>
+                      <p><span className="font-medium">COC Number:</span> {seafarer?.coc_number || 'Not provided'}</p>
                     </div>
                   </div>
                 </div>

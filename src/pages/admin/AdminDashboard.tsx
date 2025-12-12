@@ -9,7 +9,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Building2, BookOpen, Users, TrendingUp, Award, CheckCircle, XCircle, Clock, AlertCircle, DollarSign, FileCheck } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { supabase } from '@/lib/supabase'
-import { maritimeApi, Institute, Course, Booking, Certificate, User, ReactivationRequest } from '@/services/maritime'
+import { api, Institute, Course, Booking, Certificate, User, ReactivationRequest } from '@/services/api'
 
 export default function AdminDashboard() {
   const navigate = useNavigate()
@@ -34,12 +34,12 @@ export default function AdminDashboard() {
       setLoading(true)
 
       const [instituteData, courseData, bookingData, certData, userData, reactivationData] = await Promise.all([
-        maritimeApi.listInstitutes(false),
-        maritimeApi.listCourses(),
-        maritimeApi.listBookings(),
-        maritimeApi.listCertificates(),
-        maritimeApi.listAllUsers(),
-        maritimeApi.listReactivationRequests()
+        api.listInstitutes(false),
+        api.listCourses(),
+        api.listBookings(),
+        api.listCertificates(),
+        api.listAllUsers(),
+        api.listReactivationRequests()
       ])
 
       setInstitutes(instituteData)
@@ -62,7 +62,7 @@ export default function AdminDashboard() {
 
   const handleVerifyInstitute = async (instid: string, status: 'verified' | 'rejected') => {
     try {
-      await maritimeApi.updateInstituteStatus(instid, status)
+      await api.updateInstituteStatus(instid, status)
 
       toast({
         title: status === 'verified' ? 'Institute Verified' : 'Institute Rejected',
@@ -83,7 +83,7 @@ export default function AdminDashboard() {
 
   const handleProcessReactivationRequest = async (requestid: string, action: 'approve' | 'reject') => {
     try {
-      await maritimeApi.processReactivationRequest(requestid, action)
+      await api.processReactivationRequest(requestid, action)
 
       toast({
         title: action === 'approve' ? 'Reactivation Approved' : 'Reactivation Rejected',
@@ -102,7 +102,7 @@ export default function AdminDashboard() {
     }
   }
 
-  const analytics = maritimeApi.getAnalytics()
+  const analytics = api.getAnalytics()
   const pending = reactivationRequests?.filter(r => r.status === "pending") ?? [];
   const pendingInstitutes = institutes.filter(i => i.verified_status === 'pending')
   const verifiedInstitutes = institutes.filter(i => i.verified_status === 'verified')

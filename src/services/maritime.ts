@@ -67,16 +67,49 @@ export interface Certificate {
   cert_number: string
   issue_date: string
   expiry_date: string
+  status: 'valid' | 'expired' | 'revoked'
   dgshipping_uploaded: boolean
   created_at?: string
 }
 
+export interface Student {
+  studid: string
+  userid: string
+  dgshipping_id?: string
+  rank?: string
+  coc_number?: string
+  date_of_birth?: string
+  nationality?: string
+  profile_image?: string
+  created_at?: string
+}
+
+export interface User {
+  userid: string
+  name: string
+  email: string
+  phone?: string
+  role: 'admin' | 'institute' | 'student'
+  created_at?: string
+}
+
+export interface CourseWithDetails extends Course {
+  institute?: Institute
+  batches?: Batch[]
+}
+
 export interface ReactivationRequest {
-  request_id: string
+  requestid: string
   instid: string
-  new_accreditation_no: string
-  new_valid_from: string
-  new_valid_to: string
+  accreditation_no: string
+  valid_from: string
+  valid_to: string
+  contact_email?: string
+  contact_phone?: string
+  address?: string
+  city?: string
+  state?: string
+  reason?: string
   documents?: any[]
   status: 'pending' | 'approved' | 'rejected'
   submitted_at: string
@@ -302,9 +335,15 @@ export const maritimeApi = {
 
   async createReactivationRequest(requestData: {
     instid: string
-    new_accreditation_no: string
-    new_valid_from: string
-    new_valid_to: string
+    accreditation_no: string
+    valid_from: string
+    valid_to: string
+    contact_email?: string
+    contact_phone?: string
+    address?: string
+    city?: string
+    state?: string
+    reason?: string
     documents?: any[]
   }): Promise<ReactivationRequest> {
     const { data, error } = await supabase
@@ -319,5 +358,142 @@ export const maritimeApi = {
 
     if (error) throw error
     return data
+  },
+
+  async getStudentByUserId(userId: string): Promise<Student | null> {
+    const { data, error } = await supabase
+      .from('students')
+      .select('*')
+      .eq('userid', userId)
+      .maybeSingle()
+
+    if (error) throw error
+    return data
+  },
+
+  async listInstitutes(verifiedOnly: boolean = false): Promise<Institute[]> {
+    let query = supabase
+      .from('institutes')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (verifiedOnly) {
+      query = query.eq('verified_status', 'verified')
+    }
+
+    const { data, error } = await query
+
+    if (error) throw error
+    return data || []
+  },
+
+  async listAllUsers(): Promise<User[]> {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data || []
+  },
+
+  async listReactivationRequests(): Promise<ReactivationRequest[]> {
+    const { data, error } = await supabase
+      .from('institute_reactivation_requests')
+      .select('*')
+      .order('submitted_at', { ascending: false })
+
+    if (error) throw error
+    return data || []
+  },
+
+  async updateInstituteStatus(instid: string, status: 'verified' | 'rejected'): Promise<void> {
+    const { error } = await supabase
+      .from('institutes')
+      .update({ verified_status: status })
+      .eq('instid', instid)
+
+    if (error) throw error
+  },
+
+  async processReactivationRequest(requestid: string, action: 'approve' | 'reject'): Promise<void> {
+    const { error } = await supabase
+      .from('institute_reactivation_requests')
+      .update({
+        status: action === 'approve' ? 'approved' : 'rejected',
+        reviewed_at: new Date().toISOString()
+      })
+      .eq('requestid', requestid)
+
+    if (error) throw error
+  },
+
+  async createBooking(bookingData: {
+    studid: string
+    batchid: string
+    amount: number
+  }): Promise<Booking> {
+    const confirmationNumber = `BKG-${Date.now()}-${Math.random().toString(36).substring(7).toUpperCase()}`
+
+    const { data, error } = await supabase
+      .from('bookings')
+      .insert({
+        ...bookingData,
+        confirmation_number: confirmationNumber,
+        payment_status: 'pending',
+        attendance_status: 'not_started',
+        booking_date: new Date().toISOString()
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  },
+
+  async createPayment(paymentData: {
+    bookid: string
+    amount: number
+    method: string
+    txn_ref: string
+    status: string
+  }): Promise<void> {
+    if (paymentData.status === 'success') {
+      const { error } = await supabase
+        .from('bookings')
+        .update({ payment_status: 'completed' })
+        .eq('bookid', paymentData.bookid)
+
+      if (error) throw error
+
+      const { data: booking } = await supabase
+        .from('bookings')
+        .select('batchid')
+        .eq('bookid', paymentData.bookid)
+        .single()
+
+      if (booking) {
+        await supabase.rpc('increment_batch_seats', { batch_id: booking.batchid })
+      }
+    }
+  },
+
+  getAnalytics() {
+    return {
+      totalInstitutes: 0,
+      verifiedInstitutes: 0,
+      pendingInstitutes: 0,
+      rejectedInstitutes: 0,
+      totalCourses: 0,
+      activeCourses: 0,
+      totalStudents: 0,
+      totalBookings: 0,
+      completedBookings: 0,
+      pendingBookings: 0,
+      totalRevenue: 0,
+      totalCertificates: 0,
+      certificatesUploaded: 0,
+      avgCourseFee: 0
+    }
   }
 }

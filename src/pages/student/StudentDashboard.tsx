@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Calendar, MapPin, Clock, Users, Download, AlertCircle, CheckCircle, BookOpen, Award, Filter } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
+import { maritimeApi, courseTypes, courseModes, Student, CourseWithDetails, Booking, Certificate } from '@/services/maritime'
 
 export default function StudentDashboard() {
   const navigate = useNavigate()

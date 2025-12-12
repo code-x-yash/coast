@@ -6,10 +6,12 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { Building2, BookOpen, Users, TrendingUp, Award, CheckCircle, XCircle, Clock, AlertCircle, DollarSign, FileCheck } from 'lucide-react'
+import { Building2, BookOpen, Users, TrendingUp, Award, CheckCircle, XCircle, Clock, AlertCircle, DollarSign, FileCheck, GraduationCap, Percent } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { supabase } from '@/lib/supabase'
 import { api, Institute, Course, Booking, Certificate, User, ReactivationRequest } from '@/services/api'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 
 export default function AdminDashboard() {
   const navigate = useNavigate()
@@ -24,6 +26,10 @@ export default function AdminDashboard() {
   const [showVerificationDialog, setShowVerificationDialog] = useState(false)
   const [selectedReactivationRequest, setSelectedReactivationRequest] = useState<ReactivationRequest | null>(null)
   const [showReactivationDialog, setShowReactivationDialog] = useState(false)
+  const [selectedCourses, setSelectedCourses] = useState<any[]>([])
+  const [globalCommission, setGlobalCommission] = useState<string>('')
+  const [courseCommissions, setCourseCommissions] = useState<Record<string, string>>({})
+  const [loadingCourses, setLoadingCourses] = useState(false)
 
   useEffect(() => {
     loadDashboardData()
@@ -60,6 +66,152 @@ export default function AdminDashboard() {
     }
   }
 
+  const loadInstituteCoursesAndCommission = async (instid: string) => {
+    setLoadingCourses(true)
+    try {
+      const { data: applications, error: appError } = await supabase
+        .from('institute_course_applications')
+        .select(`
+          application_id,
+          master_course_id,
+          status,
+          commission_percent,
+          selected_at_registration,
+          master_courses (
+            course_name,
+            course_code,
+            category
+          )
+        `)
+        .eq('instid', instid)
+        .eq('selected_at_registration', true)
+        .order('master_courses(category)', { ascending: true })
+
+      if (appError) throw appError
+
+      setSelectedCourses(applications || [])
+
+      const commissions: Record<string, string> = {}
+      applications?.forEach(app => {
+        if (app.commission_percent) {
+          commissions[app.application_id] = app.commission_percent.toString()
+        }
+      })
+      setCourseCommissions(commissions)
+
+      const { data: commissionData } = await supabase
+        .from('institute_commissions')
+        .select('default_commission_percent')
+        .eq('instid', instid)
+        .maybeSingle()
+
+      if (commissionData) {
+        setGlobalCommission(commissionData.default_commission_percent.toString())
+      } else {
+        setGlobalCommission('')
+      }
+    } catch (error) {
+      console.error('Error loading courses:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to load course selections',
+        variant: 'destructive'
+      })
+    } finally {
+      setLoadingCourses(false)
+    }
+  }
+
+  const handleSetGlobalCommission = async () => {
+    if (!selectedInstitute || !globalCommission) return
+
+    try {
+      const commissionValue = parseFloat(globalCommission)
+      if (isNaN(commissionValue) || commissionValue < 0 || commissionValue > 100) {
+        toast({
+          title: 'Invalid Commission',
+          description: 'Commission must be between 0 and 100',
+          variant: 'destructive'
+        })
+        return
+      }
+
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Not authenticated')
+
+      const { error } = await supabase
+        .from('institute_commissions')
+        .upsert({
+          instid: selectedInstitute.instid,
+          default_commission_percent: commissionValue,
+          set_by: user.id,
+          set_at: new Date().toISOString()
+        })
+
+      if (error) throw error
+
+      toast({
+        title: 'Commission Set',
+        description: `Global commission of ${commissionValue}% has been set and applied to all pending courses`,
+      })
+
+      await loadInstituteCoursesAndCommission(selectedInstitute.instid)
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive'
+      })
+    }
+  }
+
+  const handleUpdateCourseStatus = async (applicationId: string, status: 'approved' | 'rejected') => {
+    if (!selectedInstitute) return
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Not authenticated')
+
+      const commission = courseCommissions[applicationId]
+      const updateData: any = {
+        status,
+        reviewed_at: new Date().toISOString(),
+        reviewed_by: user.id
+      }
+
+      if (status === 'approved' && commission) {
+        updateData.commission_percent = parseFloat(commission)
+      }
+
+      const { error } = await supabase
+        .from('institute_course_applications')
+        .update(updateData)
+        .eq('application_id', applicationId)
+
+      if (error) throw error
+
+      toast({
+        title: status === 'approved' ? 'Course Approved' : 'Course Rejected',
+        description: `Course has been ${status}`,
+      })
+
+      await loadInstituteCoursesAndCommission(selectedInstitute.instid)
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive'
+      })
+    }
+  }
+
+  const handleUpdateCourseCommission = (applicationId: string, value: string) => {
+    setCourseCommissions(prev => ({
+      ...prev,
+      [applicationId]: value
+    }))
+  }
+
   const handleVerifyInstitute = async (instid: string, status: 'verified' | 'rejected') => {
     try {
       await api.updateInstituteStatus(instid, status)
@@ -71,6 +223,9 @@ export default function AdminDashboard() {
 
       setShowVerificationDialog(false)
       setSelectedInstitute(null)
+      setSelectedCourses([])
+      setGlobalCommission('')
+      setCourseCommissions({})
       loadDashboardData()
     } catch (error: any) {
       toast({
@@ -337,14 +492,15 @@ export default function AdminDashboard() {
 
                             <div className="flex gap-2 mt-4 pt-4 border-t">
                               <Button
-                                onClick={() => {
+                                onClick={async () => {
                                   setSelectedInstitute(institute)
                                   setShowVerificationDialog(true)
+                                  await loadInstituteCoursesAndCommission(institute.instid)
                                 }}
                                 className="bg-green-600 hover:bg-green-700"
                               >
                                 <CheckCircle className="h-4 w-4 mr-2" />
-                                Verify & Approve
+                                Review & Verify
                               </Button>
                               <Button
                                 variant="destructive"
@@ -829,7 +985,7 @@ export default function AdminDashboard() {
 
                   {courses.filter(c => c.instid === selectedInstitute.instid).length > 0 && (
                     <>
-                      
+
                       <Alert>
                         <AlertCircle className="h-4 w-4" />
                         <AlertDescription>
@@ -840,6 +996,169 @@ export default function AdminDashboard() {
                       </Alert>
                     </>
                   )}
+
+                  <div className="border-t pt-4">
+                    <div className="flex items-center gap-2 mb-4">
+                      <GraduationCap className="h-5 w-5 text-primary" />
+                      <h4 className="font-semibold text-lg">Course Selections & Commission</h4>
+                    </div>
+
+                    {loadingCourses ? (
+                      <div className="py-8 text-center">
+                        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto"></div>
+                        <p className="text-sm text-muted-foreground mt-2">Loading course selections...</p>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                          <Label htmlFor="globalCommission" className="text-sm font-semibold mb-2 flex items-center gap-2">
+                            <Percent className="h-4 w-4" />
+                            Global Commission (%)
+                          </Label>
+                          <p className="text-xs text-muted-foreground mb-3">
+                            Set a commission percentage that will be automatically applied to all pending courses
+                          </p>
+                          <div className="flex gap-2">
+                            <Input
+                              id="globalCommission"
+                              type="number"
+                              min="0"
+                              max="100"
+                              step="0.01"
+                              value={globalCommission}
+                              onChange={(e) => setGlobalCommission(e.target.value)}
+                              placeholder="e.g., 15"
+                              className="max-w-[120px]"
+                            />
+                            <Button
+                              onClick={handleSetGlobalCommission}
+                              disabled={!globalCommission}
+                              size="sm"
+                            >
+                              Apply to All Courses
+                            </Button>
+                          </div>
+                        </div>
+
+                        {selectedCourses.length === 0 ? (
+                          <Alert>
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertDescription>
+                              No courses selected during registration
+                            </AlertDescription>
+                          </Alert>
+                        ) : (
+                          <div className="space-y-3">
+                            <p className="text-sm text-muted-foreground">
+                              Institute selected <strong>{selectedCourses.length}</strong> {selectedCourses.length === 1 ? 'course' : 'courses'} during registration. Review and approve/reject each course individually.
+                            </p>
+
+                            {Object.entries(
+                              selectedCourses.reduce((acc: any, course: any) => {
+                                const category = course.master_courses?.category || 'Uncategorized'
+                                if (!acc[category]) acc[category] = []
+                                acc[category].push(course)
+                                return acc
+                              }, {})
+                            ).map(([category, courses]: [string, any]) => (
+                              <div key={category} className="border rounded-lg p-4">
+                                <h5 className="font-semibold text-sm text-primary mb-3">{category}</h5>
+                                <div className="space-y-2">
+                                  {courses.map((course: any) => (
+                                    <div
+                                      key={course.application_id}
+                                      className="flex items-center justify-between p-3 bg-muted rounded border"
+                                    >
+                                      <div className="flex-1">
+                                        <div className="flex items-center gap-2 mb-1">
+                                          <p className="font-medium text-sm">
+                                            {course.master_courses?.course_name}
+                                          </p>
+                                          <Badge
+                                            variant={
+                                              course.status === 'approved' ? 'default' :
+                                              course.status === 'rejected' ? 'destructive' : 'secondary'
+                                            }
+                                          >
+                                            {course.status}
+                                          </Badge>
+                                        </div>
+                                        <p className="text-xs text-muted-foreground">
+                                          {course.master_courses?.course_code}
+                                        </p>
+                                      </div>
+
+                                      <div className="flex items-center gap-2">
+                                        {course.status === 'pending' && (
+                                          <>
+                                            <div className="flex items-center gap-1">
+                                              <Input
+                                                type="number"
+                                                min="0"
+                                                max="100"
+                                                step="0.01"
+                                                value={courseCommissions[course.application_id] || ''}
+                                                onChange={(e) => handleUpdateCourseCommission(course.application_id, e.target.value)}
+                                                placeholder="%"
+                                                className="w-20 h-8 text-sm"
+                                              />
+                                              <span className="text-xs text-muted-foreground">%</span>
+                                            </div>
+                                            <Button
+                                              size="sm"
+                                              onClick={() => handleUpdateCourseStatus(course.application_id, 'approved')}
+                                              className="bg-green-600 hover:bg-green-700 h-8"
+                                            >
+                                              <CheckCircle className="h-3 w-3 mr-1" />
+                                              Approve
+                                            </Button>
+                                            <Button
+                                              size="sm"
+                                              variant="destructive"
+                                              onClick={() => handleUpdateCourseStatus(course.application_id, 'rejected')}
+                                              className="h-8"
+                                            >
+                                              <XCircle className="h-3 w-3 mr-1" />
+                                              Reject
+                                            </Button>
+                                          </>
+                                        )}
+                                        {course.status === 'approved' && (
+                                          <div className="flex items-center gap-2 text-sm">
+                                            <span className="text-green-600 font-medium">
+                                              {course.commission_percent}% commission
+                                            </span>
+                                            <Button
+                                              size="sm"
+                                              variant="outline"
+                                              onClick={() => handleUpdateCourseStatus(course.application_id, 'pending')}
+                                              className="h-8"
+                                            >
+                                              Revoke
+                                            </Button>
+                                          </div>
+                                        )}
+                                        {course.status === 'rejected' && (
+                                          <Button
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={() => handleUpdateCourseStatus(course.application_id, 'pending')}
+                                            className="h-8"
+                                          >
+                                            Reset
+                                          </Button>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 <Alert>

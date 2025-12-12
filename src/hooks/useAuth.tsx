@@ -340,6 +340,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .eq('instid', instituteData.instid)
     }
 
+    if (formData.selectedCourses && formData.selectedCourses.length > 0) {
+      const courseApplications = formData.selectedCourses.map(masterCourseId => ({
+        instid: instituteData.instid,
+        master_course_id: masterCourseId,
+        status: 'pending',
+        selected_at_registration: true,
+        applied_at: new Date().toISOString()
+      }))
+
+      const { error: courseError } = await supabase
+        .from('institute_course_applications')
+        .insert(courseApplications)
+
+      if (courseError) {
+        console.error('Error saving course selections:', courseError)
+        throw new Error('Failed to save course selections')
+      }
+    }
+
     await loadUserProfile(authData.user.id)
   }
 

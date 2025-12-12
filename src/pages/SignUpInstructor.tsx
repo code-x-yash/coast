@@ -46,8 +46,17 @@ export default function SignUpInstructor({ onNavigate }: SignUpInstructorProps) 
       return
     }
 
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters')
+    if (formData.password.length < 8) {
+      setError('Password must be at least 8 characters long')
+      return
+    }
+
+    const hasUpperCase = /[A-Z]/.test(formData.password)
+    const hasLowerCase = /[a-z]/.test(formData.password)
+    const hasNumber = /[0-9]/.test(formData.password)
+
+    if (!hasUpperCase || !hasLowerCase || !hasNumber) {
+      setError('Password must contain at least one uppercase letter, one lowercase letter, and one number')
       return
     }
 
@@ -155,7 +164,7 @@ export default function SignUpInstructor({ onNavigate }: SignUpInstructorProps) 
                     required
                   />
                   <p className="text-xs text-muted-foreground">
-                    Must be at least 6 characters
+                    Must be at least 8 characters with uppercase, lowercase, and number
                   </p>
                 </div>
 

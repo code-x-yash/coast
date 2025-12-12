@@ -4,10 +4,9 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { courseService, type Course } from '@/services/courses'
 import { useAuth } from '@/hooks/useAuth'
-import { Star, Clock, Users, Award, CheckCircle2, Play, Lock, ArrowLeft, MapPin, Calendar } from 'lucide-react'
+import { CheckCircle2, ArrowLeft, MapPin, Calendar, Clock, Phone, Mail, Ship, Building2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
 export default function CourseDetail() {
@@ -16,7 +15,6 @@ export default function CourseDetail() {
   const { user } = useAuth()
   const [course, setCourse] = useState<Course | null>(null)
   const [batches, setBatches] = useState<any[]>([])
-  const [isEnrolled, setIsEnrolled] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const { toast } = useToast()
 
@@ -44,30 +42,20 @@ export default function CourseDetail() {
     }
   }
 
-  const handleEnroll = async () => {
+  const handleEnroll = () => {
     if (!user) {
+      toast({
+        title: 'Sign In Required',
+        description: 'Please sign in to enroll in this course.',
+      })
       navigate('/sign-in')
       return
     }
 
-    try {
-      toast({
-        title: 'Enrollment Initiated',
-        description: 'Please complete the booking process.',
-      })
-      setIsEnrolled(true)
-      toast({
-        title: 'Successfully enrolled!',
-        description: 'You can now access all course materials.',
-      })
-    } catch (error) {
-      console.error('Enrollment failed:', error)
-      toast({
-        title: 'Enrollment failed',
-        description: 'Please try again later.',
-        variant: 'destructive'
-      })
-    }
+    toast({
+      title: 'Contact Institute',
+      description: 'Please contact the institute directly to enroll in this course.',
+    })
   }
 
   if (isLoading) {
@@ -85,21 +73,24 @@ export default function CourseDetail() {
   if (!course) {
     return (
       <div className="min-h-screen py-8">
-        <div className="container mx-auto px-4">
-          <p>Course not found</p>
+        <div className="container mx-auto px-4 text-center">
+          <Ship className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+          <h2 className="text-2xl font-bold mb-2">Course Not Found</h2>
+          <p className="text-muted-foreground mb-6">
+            This course may have been removed or is no longer available
+          </p>
+          <Button onClick={() => navigate('/courses')}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Courses
+          </Button>
         </div>
       </div>
     )
   }
 
-  const whatYouWillLearn = course.whatYouWillLearn || []
-  const requirements = course.requirements || []
-  const totalDuration = lessons.reduce((sum, lesson) => sum + lesson.durationMinutes, 0)
-
   return (
-    <div className="min-h-screen">
-      {/* Hero Section */}
-      <section className="bg-gradient-to-br from-primary/10 via-accent/5 to-background py-12">
+    <div className="min-h-screen pb-12">
+      <div className="bg-gradient-to-br from-primary/10 via-accent/5 to-background py-8">
         <div className="container mx-auto px-4">
           <Button
             variant="ghost"
@@ -112,201 +103,156 @@ export default function CourseDetail() {
 
           <div className="grid lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-6">
-              <Badge>{course.category}</Badge>
-              <h1 className="text-4xl font-bold">{course.title}</h1>
-              <p className="text-lg text-muted-foreground">{course.description}</p>
+              <div className="flex items-center gap-3">
+                <Badge>{course.type}</Badge>
+                <Badge variant="secondary">{course.mode}</Badge>
+              </div>
 
-              <div className="flex flex-wrap items-center gap-6 text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1">
-                    <Star className="h-5 w-5 fill-primary text-primary" />
-                    <span className="font-semibold text-lg">{course.rating}</span>
-                  </div>
-                  <span className="text-muted-foreground">rating</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Users className="h-5 w-5 text-muted-foreground" />
-                  <span>{course.totalStudents.toLocaleString()} students</span>
-                </div>
+              <h1 className="text-4xl font-bold">{course.title}</h1>
+
+              {course.description && (
+                <p className="text-lg text-muted-foreground">{course.description}</p>
+              )}
+
+              <div className="flex flex-wrap items-center gap-6 text-sm border-y py-4">
                 <div className="flex items-center gap-2">
                   <Clock className="h-5 w-5 text-muted-foreground" />
-                  <span>{course.durationHours} hours</span>
+                  <span>{course.duration}</span>
                 </div>
-                <Badge variant="secondary">{course.level}</Badge>
-              </div>
-
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">Created by</p>
-                <div>
-                  <p className="font-semibold">{course.instructorName}</p>
-                  {course.instructorTitle && (
-                    <p className="text-sm text-muted-foreground">{course.instructorTitle}</p>
-                  )}
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-muted-foreground" />
+                  <span>{course.validity_months || 60} months validity</span>
                 </div>
               </div>
-            </div>
 
-            {/* Enrollment Card */}
-            <div className="lg:col-span-1">
-              <Card className="sticky top-20">
-                <div className="aspect-video relative overflow-hidden rounded-t-lg">
-                  <img
-                    src={course.thumbnailUrl || 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=800&q=80'}
-                    alt={course.title}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <CardContent className="p-6 space-y-4">
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-bold text-primary">${course.price}</span>
-                  </div>
-
-                  {isEnrolled ? (
-                    <Button
-                      size="lg"
-                      className="w-full"
-                      onClick={() => navigate(`/seafarer/learn/${courseId}`)}
-                    >
-                      Continue Learning
-                    </Button>
-                  ) : (
-                    <Button
-                      size="lg"
-                      className="w-full"
-                      onClick={handleEnroll}
-                    >
-                      Enroll Now
-                    </Button>
-                  )}
-
-                  <Separator />
-
-                  <div className="space-y-3">
-                    <h4 className="font-semibold">This course includes:</h4>
-                    <ul className="space-y-2 text-sm">
-                      <li className="flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4 text-primary" />
-                        <span>{totalDuration} minutes of video</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4 text-primary" />
-                        <span>{lessons.length} lessons</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4 text-primary" />
-                        <span>Lifetime access</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4 text-primary" />
-                        <span>Certificate of completion</span>
-                      </li>
-                    </ul>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Course Content */}
-      <section className="py-12">
-        <div className="container mx-auto px-4">
-          <div className="grid lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 space-y-8">
-              {/* What You'll Learn */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>What You'll Learn</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid md:grid-cols-2 gap-3">
-                    {whatYouWillLearn.map((item: string, index: number) => (
-                      <div key={index} className="flex items-start gap-2">
-                        <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                        <span className="text-sm">{item}</span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Course Content */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Course Content</CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    {lessons.length} lessons • {Math.floor(totalDuration / 60)}h {totalDuration % 60}m
-                  </p>
-                </CardHeader>
-                <CardContent>
-                  <Accordion type="single" collapsible className="w-full">
-                    <AccordionItem value="section-1">
-                      <AccordionTrigger>
-                        <span className="font-semibold">Course Curriculum</span>
-                      </AccordionTrigger>
-                      <AccordionContent>
-                        <div className="space-y-2">
-                          {lessons.map((lesson, index) => (
-                            <div
-                              key={lesson.id}
-                              className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors"
-                            >
-                              <div className="flex items-center gap-3">
-                                {Number(lesson.isPreview) > 0 ? (
-                                  <Play className="h-4 w-4 text-primary" />
-                                ) : (
-                                  <Lock className="h-4 w-4 text-muted-foreground" />
-                                )}
-                                <div>
-                                  <p className="text-sm font-medium">
-                                    {index + 1}. {lesson.title}
-                                  </p>
-                                  {lesson.description && (
-                                    <p className="text-xs text-muted-foreground mt-1">
-                                      {lesson.description}
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <Clock className="h-3 w-3" />
-                                <span>{lesson.durationMinutes}min</span>
-                                {Number(lesson.isPreview) > 0 && (
-                                  <Badge variant="secondary" className="ml-2">Preview</Badge>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  </Accordion>
-                </CardContent>
-              </Card>
-
-              {/* Requirements */}
-              {requirements.length > 0 && (
+              {course.institutes && (
                 <Card>
-                  <CardHeader>
-                    <CardTitle>Requirements</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ul className="space-y-2">
-                      {requirements.map((req: string, index: number) => (
-                        <li key={index} className="flex items-start gap-2 text-sm">
-                          <span className="text-muted-foreground mt-0.5">•</span>
-                          <span>{req}</span>
-                        </li>
-                      ))}
-                    </ul>
+                  <CardContent className="pt-6">
+                    <div className="flex items-start gap-4">
+                      <Building2 className="h-8 w-8 text-primary mt-1" />
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-lg mb-2">{course.institutes.name}</h3>
+                        {course.institutes.city && (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                            <MapPin className="h-4 w-4" />
+                            <span>{course.institutes.city}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="bg-green-50 border-green-200 text-green-700">
+                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                            Verified Institute
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
               )}
             </div>
+
+            <div className="lg:col-span-1">
+              <Card className="sticky top-20">
+                <div className="aspect-video relative overflow-hidden rounded-t-lg bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center">
+                  <Ship className="h-32 w-32 text-primary/20" />
+                </div>
+                <CardContent className="p-6 space-y-4">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-bold text-primary">₹{Number(course.fees).toLocaleString()}</span>
+                  </div>
+
+                  <Button
+                    size="lg"
+                    className="w-full"
+                    onClick={handleEnroll}
+                  >
+                    Contact Institute to Enroll
+                  </Button>
+
+                  <Separator />
+
+                  <div className="space-y-3">
+                    <h4 className="font-semibold">Course Information</h4>
+                    <ul className="space-y-2 text-sm">
+                      <li className="flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-primary" />
+                        <span>{course.duration} duration</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-primary" />
+                        <span>{course.mode} mode</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-primary" />
+                        <span>{course.validity_months || 60} months validity</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-primary" />
+                        <span>Certificate on completion</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  {course.institutes && (
+                    <>
+                      <Separator />
+                      <div className="space-y-2">
+                        <h4 className="font-semibold text-sm">Contact Institute</h4>
+                        {course.institutes.contact_email && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <Mail className="h-4 w-4 text-muted-foreground" />
+                            <a href={`mailto:${course.institutes.contact_email}`} className="text-primary hover:underline">
+                              {course.institutes.contact_email}
+                            </a>
+                          </div>
+                        )}
+                        {course.institutes.contact_phone && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <Phone className="h-4 w-4 text-muted-foreground" />
+                            <a href={`tel:${course.institutes.contact_phone}`} className="text-primary hover:underline">
+                              {course.institutes.contact_phone}
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
-      </section>
+      </div>
+
+      {batches.length > 0 && (
+        <div className="container mx-auto px-4 mt-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Available Batches</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {batches.map((batch) => (
+                  <div
+                    key={batch.batchid}
+                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                  >
+                    <div>
+                      <p className="font-medium">{batch.batch_name || `Batch ${batch.batchid.slice(0, 8)}`}</p>
+                      <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                        <span>Start: {new Date(batch.start_date).toLocaleDateString()}</span>
+                        <span>•</span>
+                        <span>End: {new Date(batch.end_date).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                    <Badge>{batch.batch_status}</Badge>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   )
 }

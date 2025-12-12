@@ -62,14 +62,22 @@ export default function SignUpSeafarer() {
     }
 
     if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters')
+      setError('Password must be at least 8 characters long')
+      return
+    }
+
+    const hasUpperCase = /[A-Z]/.test(formData.password)
+    const hasLowerCase = /[a-z]/.test(formData.password)
+    const hasNumber = /[0-9]/.test(formData.password)
+
+    if (!hasUpperCase || !hasLowerCase || !hasNumber) {
+      setError('Password must contain at least one uppercase letter, one lowercase letter, and one number')
       return
     }
 
     setLoading(true)
 
     try {
-        debugger;
         await signUpStudent(formData)
       toast({
         title: 'Welcome to Maritime Training Platform!',
@@ -232,7 +240,7 @@ export default function SignUpSeafarer() {
                         required
                       />
                       <p className="text-xs text-muted-foreground">
-                        Must be at least 6 characters
+                        Must be at least 8 characters with uppercase, lowercase, and number
                       </p>
                     </div>
 

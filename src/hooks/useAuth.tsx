@@ -44,6 +44,7 @@ interface AuthContextType {
     selectedCourses?: string[]
     logoFile?: File
     bannerFile?: File
+    licenseFiles?: File[]
   }) => Promise<void>
 }
 
@@ -199,6 +200,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     selectedCourses?: string[]
     logoFile?: File
     bannerFile?: File
+    licenseFiles?: File[]
   }) => {
     if (formData.password !== formData.confirmPassword) {
       throw new Error('Passwords do not match')
@@ -231,7 +233,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (userError) throw userError
 
-    const { error: instituteError } = await supabase
+    const { data: instituteData, error: instituteError } = await supabase
       .from('institutes')
       .insert({
         userid: authData.user.id,
@@ -245,10 +247,98 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         city: formData.city,
         state: formData.state,
         verified_status: 'pending',
-        documents: formData.documents || []
+        documents: []
       })
+      .select()
+      .single()
 
     if (instituteError) throw instituteError
+    if (!instituteData) throw new Error('Failed to create institute')
+
+    const uploadedDocuments: any[] = []
+
+    if (formData.licenseFiles && formData.licenseFiles.length > 0) {
+      for (let i = 0; i < formData.licenseFiles.length; i++) {
+        const file = formData.licenseFiles[i]
+        const fileExt = file.name.split('.').pop()
+        const fileName = `${instituteData.instid}/${Date.now()}_${i}.${fileExt}`
+
+        const { error: uploadError } = await supabase.storage
+          .from('institute-documents')
+          .upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: false
+          })
+
+        if (uploadError) {
+          console.error('Error uploading license file:', uploadError)
+        } else {
+          const { data: { publicUrl } } = supabase.storage
+            .from('institute-documents')
+            .getPublicUrl(fileName)
+
+          uploadedDocuments.push({
+            name: file.name,
+            url: fileName,
+            type: file.type,
+            size: file.size
+          })
+        }
+      }
+    }
+
+    if (formData.logoFile) {
+      const fileExt = formData.logoFile.name.split('.').pop()
+      const fileName = `${instituteData.instid}/logo.${fileExt}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('institute-logos')
+        .upload(fileName, formData.logoFile, {
+          cacheControl: '3600',
+          upsert: true
+        })
+
+      if (!uploadError) {
+        const { data: { publicUrl } } = supabase.storage
+          .from('institute-logos')
+          .getPublicUrl(fileName)
+
+        await supabase
+          .from('institutes')
+          .update({ logo_url: publicUrl })
+          .eq('instid', instituteData.instid)
+      }
+    }
+
+    if (formData.bannerFile) {
+      const fileExt = formData.bannerFile.name.split('.').pop()
+      const fileName = `${instituteData.instid}/banner.${fileExt}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('institute-banners')
+        .upload(fileName, formData.bannerFile, {
+          cacheControl: '3600',
+          upsert: true
+        })
+
+      if (!uploadError) {
+        const { data: { publicUrl } } = supabase.storage
+          .from('institute-banners')
+          .getPublicUrl(fileName)
+
+        await supabase
+          .from('institutes')
+          .update({ banner_url: publicUrl })
+          .eq('instid', instituteData.instid)
+      }
+    }
+
+    if (uploadedDocuments.length > 0) {
+      await supabase
+        .from('institutes')
+        .update({ documents: uploadedDocuments })
+        .eq('instid', instituteData.instid)
+    }
 
     await loadUserProfile(authData.user.id)
   }

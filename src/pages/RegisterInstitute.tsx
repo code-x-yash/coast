@@ -48,6 +48,7 @@ export default function RegisterInstitute() {
 
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const [bannerFile, setBannerFile] = useState<File | null>(null)
+  const [licenseFiles, setLicenseFiles] = useState<File[]>([])
   const [masterCourses, setMasterCourses] = useState<MasterCourse[]>([])
   const [selectedCourses, setSelectedCourses] = useState<string[]>([])
   const [selfDeclaration, setSelfDeclaration] = useState(false)
@@ -125,6 +126,30 @@ export default function RegisterInstitute() {
     }
   }
 
+  const handleLicenseFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const files = Array.from(e.target.files)
+      const oversizedFiles = files.filter(f => f.size > 10 * 1024 * 1024)
+
+      if (oversizedFiles.length > 0) {
+        setError('Each license document must not exceed 10MB')
+        return
+      }
+
+      if (files.length > 5) {
+        setError('Maximum 5 license documents allowed')
+        return
+      }
+
+      setLicenseFiles(files)
+      setError('')
+    }
+  }
+
+  const removeLicenseFile = (index: number) => {
+    setLicenseFiles(prev => prev.filter((_, i) => i !== index))
+  }
+
   const groupedCourses = masterCourses.reduce((acc, course) => {
     if (!acc[course.category]) {
       acc[course.category] = []
@@ -167,6 +192,11 @@ export default function RegisterInstitute() {
       return
     }
 
+    if (licenseFiles.length === 0) {
+      setError('Please upload at least one license/accreditation document')
+      return
+    }
+
     if (selectedCourses.length === 0) {
       setError('Please select at least one course you want to offer')
       return
@@ -184,7 +214,8 @@ export default function RegisterInstitute() {
         ...formData,
         selectedCourses,
         logoFile,
-        bannerFile
+        bannerFile,
+        licenseFiles
       })
       toast({
         title: 'Registration Successful!',
@@ -215,6 +246,7 @@ export default function RegisterInstitute() {
       formData.valid_to &&
       logoFile &&
       bannerFile &&
+      licenseFiles.length > 0 &&
       selectedCourses.length > 0 &&
       selfDeclaration
     )
@@ -617,12 +649,53 @@ export default function RegisterInstitute() {
                   )}
                 </div>
 
-                {/* Section 7: Documentation Upload - Coming Soon */}
-                <Alert>
-                  <AlertDescription>
-                    <strong>Note:</strong> Document upload will be required in the next phase. Currently being set up.
-                  </AlertDescription>
-                </Alert>
+                {/* Section 7: License Documentation Upload */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-lg border-b pb-2">7. License Documentation</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Upload your DG Shipping license/accreditation documents. Supported formats: PDF, PNG, JPG, JPEG
+                  </p>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="licenseFiles">License Documents * (Max 5 files, 10MB each)</Label>
+                    <Input
+                      id="licenseFiles"
+                      type="file"
+                      accept=".pdf,image/png,image/jpeg,image/jpg"
+                      onChange={handleLicenseFilesChange}
+                      multiple
+                      required
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Upload DG Shipping accreditation certificate, license documents, etc.
+                    </p>
+                  </div>
+
+                  {licenseFiles.length > 0 && (
+                    <div className="border rounded-lg p-4 space-y-2">
+                      <p className="text-sm font-medium">Selected Documents ({licenseFiles.length}/5):</p>
+                      {licenseFiles.map((file, index) => (
+                        <div key={index} className="flex items-center justify-between p-2 bg-muted rounded">
+                          <div className="flex items-center gap-2">
+                            <Upload className="h-4 w-4 text-primary" />
+                            <span className="text-sm">{file.name}</span>
+                            <span className="text-xs text-muted-foreground">
+                              ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                            </span>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeLicenseFile(index)}
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
                 {/* Section 8: Self Declaration */}
                 <div className="space-y-4">

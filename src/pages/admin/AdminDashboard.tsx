@@ -792,16 +792,36 @@ export default function AdminDashboard() {
 
                   {selectedInstitute.documents && selectedInstitute.documents.length > 0 && (
                     <>
-                      
+
                       <div>
-                        <h4 className="font-semibold mb-3">Submitted Documents</h4>
+                        <h4 className="font-semibold mb-3">Submitted License Documents</h4>
                         <div className="space-y-2">
-                          {selectedInstitute.documents.map((doc: any, index: number) => (
-                            <div key={index} className="flex items-center gap-2 p-2 bg-background rounded border">
-                              <FileCheck className="h-4 w-4 text-primary" />
-                              <span className="text-sm">{doc.name || `Document ${index + 1}`}</span>
-                            </div>
-                          ))}
+                          {selectedInstitute.documents.map((doc: any, index: number) => {
+                            const { data: { publicUrl } } = supabase.storage
+                              .from('institute-documents')
+                              .getPublicUrl(doc.url)
+
+                            return (
+                              <div key={index} className="flex items-center justify-between p-3 bg-background rounded border">
+                                <div className="flex items-center gap-3">
+                                  <FileCheck className="h-5 w-5 text-primary" />
+                                  <div>
+                                    <p className="text-sm font-medium">{doc.name}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {doc.type} • {(doc.size / 1024 / 1024).toFixed(2)} MB
+                                    </p>
+                                  </div>
+                                </div>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => window.open(publicUrl, '_blank')}
+                                >
+                                  View Document
+                                </Button>
+                              </div>
+                            )
+                          })}
                         </div>
                       </div>
                     </>

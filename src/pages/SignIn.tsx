@@ -18,7 +18,6 @@ export default function SignIn() {
   const [loading, setLoading] = useState(false)
 
     useEffect(() => {
-        debugger;
     if (user) {
       const dashboardMap = {
         admin: '/admin',
@@ -30,7 +29,6 @@ export default function SignIn() {
   }, [user, navigate])
 
   const handleSubmit = async (e: React.FormEvent) => {
-          debugger;
     e.preventDefault()
     setError('')
     setLoading(true)

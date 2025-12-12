@@ -56,12 +56,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     checkUser()
 
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
-        await loadUserProfile(session.user.id)
-      } else if (event === 'SIGNED_OUT') {
-        setUser(null)
-      }
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      (async () => {
+        if (event === 'SIGNED_IN' && session?.user) {
+          await loadUserProfile(session.user.id)
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null)
+        }
+      })()
     })
 
     return () => {
@@ -108,40 +110,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const signIn = async (email: string, password: string) => {
-    if (email === 'admin@sealearn.com' && password === 'admin123') {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: 'admin@sealearn.com',
-        password: 'admin123'
-      })
-
-      if (error) {
-        const adminUser: UserProfile = {
-          id: 'admin-temp',
-          userid: 'admin-temp',
-          email,
-          name: 'Admin',
-          role: 'admin'
-        }
-        setUser(adminUser)
-        return
-      }
-
-      if (data.user) {
-        await loadUserProfile(data.user.id)
-      }
-      return
-    }
-
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password
     })
 
     if (error) throw error
-
-    if (data.user) {
-      await loadUserProfile(data.user.id)
-    }
   }
 
   const signOut = async () => {

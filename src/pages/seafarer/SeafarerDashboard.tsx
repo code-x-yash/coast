@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Calendar, MapPin, Clock, Users, Download, AlertCircle, CheckCircle, BookOpen, Award, Filter } from 'lucide-react'
+import { Calendar, MapPin, Clock, Users, Download, AlertCircle, CheckCircle, BookOpen, Award, Filter, Building2 } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { api, courseTypes, courseModes, Seafarer, CourseWithDetails, Booking, Certificate } from '@/services/api'
 
@@ -42,20 +42,29 @@ export default function SeafarerDashboard() {
     try {
       setLoading(true)
 
-      const seafarerData = await api.getSeafarerByUserId(user.userid)
+      const seafarerData = await api.getSeafarerByUserId(user.id)
       setSeafarer(seafarerData)
 
       const allCourses = await api.listCourses()
       const institutes = await api.listInstitutes(true)
       const allBatches = await api.listBatches()
 
-      const coursesWithDetails: CourseWithDetails[] = allCourses.map(course => ({
+      const verifiedInstitutes = institutes.filter(i => i.verified_status === 'verified')
+      const coursesFromVerifiedInstitutes = allCourses.filter(course =>
+        verifiedInstitutes.some(inst => inst.instid === course.instid)
+      )
+
+      const coursesWithDetails: CourseWithDetails[] = coursesFromVerifiedInstitutes.map(course => ({
         ...course,
-        institute: institutes.find(i => i.instid === course.instid),
-        batches: allBatches.filter(b => b.courseid === course.courseid && b.batch_status === 'upcoming')
+        institute: verifiedInstitutes.find(i => i.instid === course.instid),
+        batches: allBatches.filter(b =>
+          b.courseid === course.courseid &&
+          b.batch_status === 'upcoming' &&
+          b.seats_booked < b.seats_total
+        )
       }))
 
-      setCourses(coursesWithDetails)
+      setCourses(coursesWithDetails.filter(c => c.batches && c.batches.length > 0))
 
       if (seafarerData) {
         const seafarerBookings = await api.listBookings({ studid: seafarerData.studid })
@@ -114,6 +123,11 @@ export default function SeafarerDashboard() {
     }
 
     try {
+      toast({
+        title: 'Processing Booking',
+        description: 'Please wait...',
+      })
+
       const booking = await api.createBooking({
         studid: seafarer.studid,
         batchid,
@@ -124,14 +138,15 @@ export default function SeafarerDashboard() {
 
       toast({
         title: 'Booking Successful!',
-        description: `Confirmation Number: ${booking.confirmation_number}`,
+        description: `Confirmation Number: ${booking.confirmation_number}. Check your bookings tab for details.`,
       })
 
-      loadDashboardData()
+      await loadDashboardData()
     } catch (error: any) {
+      console.error('Booking error:', error)
       toast({
         title: 'Booking Failed',
-        description: error.message,
+        description: error.message || 'Failed to complete booking. Please try again.',
         variant: 'destructive'
       })
     }
@@ -269,23 +284,31 @@ export default function SeafarerDashboard() {
 
             <div className="grid md:grid-cols-2 gap-6">
               {filteredCourses.map((course) => (
-                <Card key={course.courseid} className="hover:shadow-lg transition-shadow">
+                <Card key={course.courseid} className="hover:shadow-lg transition-shadow border-l-4 border-l-primary/20">
                   <CardHeader>
                     <div className="flex justify-between items-start mb-2">
                       <div className="flex-1">
-                        <CardTitle className="text-lg">{course.title}</CardTitle>
-                        <CardDescription className="mt-2">
-                          {course.institute?.name}
+                        <CardTitle className="text-lg leading-tight">{course.title}</CardTitle>
+                        <CardDescription className="mt-2 flex items-center gap-2">
+                          <Building2 className="h-3 w-3" />
+                          {course.institute?.name || 'Institute'}
                         </CardDescription>
                       </div>
-                      <Badge variant="secondary">{course.type}</Badge>
+                      <Badge variant="secondary" className="shrink-0">{course.type}</Badge>
                     </div>
-                    <div className="flex gap-2 mt-2">
-                      <Badge variant="outline">
+                    <div className="flex gap-2 mt-2 flex-wrap">
+                      <Badge variant="outline" className="bg-green-50">
                         <CheckCircle className="h-3 w-3 mr-1" />
                         Verified
                       </Badge>
-                      <Badge variant="outline">{course.accreditation_ref}</Badge>
+                      {course.accreditation_ref && (
+                        <Badge variant="outline">{course.accreditation_ref}</Badge>
+                      )}
+                      {course.validity_months && (
+                        <Badge variant="outline">
+                          Valid for {course.validity_months} months
+                        </Badge>
+                      )}
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -315,29 +338,48 @@ export default function SeafarerDashboard() {
                     {course.batches && course.batches.length > 0 && (
                       <div className="space-y-2">
                         <p className="text-sm font-medium">Upcoming Batches:</p>
-                        {course.batches.slice(0, 2).map((batch) => (
-                          <div key={batch.batchid} className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                            <div className="flex-1">
-                              <p className="text-sm font-medium">{batch.batch_name}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {new Date(batch.start_date).toLocaleDateString()} - {new Date(batch.end_date).toLocaleDateString()}
-                              </p>
-                              <div className="flex items-center gap-2 mt-1">
-                                <Users className="h-3 w-3" />
-                                <span className="text-xs">
-                                  {batch.seats_total - batch.seats_booked} seats available
-                                </span>
+                        {course.batches.slice(0, 2).map((batch) => {
+                          const isAlreadyBooked = bookings.some(b => b.batchid === batch.batchid)
+                          const seatsAvailable = batch.seats_total - batch.seats_booked
+                          const isFull = seatsAvailable <= 0
+
+                          return (
+                            <div key={batch.batchid} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                              <div className="flex-1">
+                                <p className="text-sm font-medium">{batch.batch_name}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {new Date(batch.start_date).toLocaleDateString()} - {new Date(batch.end_date).toLocaleDateString()}
+                                </p>
+                                <div className="flex items-center gap-3 mt-1">
+                                  <div className="flex items-center gap-1">
+                                    <Users className="h-3 w-3" />
+                                    <span className="text-xs">
+                                      {seatsAvailable} seat{seatsAvailable !== 1 ? 's' : ''} available
+                                    </span>
+                                  </div>
+                                  {batch.location && (
+                                    <div className="flex items-center gap-1">
+                                      <MapPin className="h-3 w-3" />
+                                      <span className="text-xs">{batch.location}</span>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
+                              <Button
+                                size="sm"
+                                onClick={() => handleBookCourse(batch.batchid, course.fees)}
+                                disabled={isFull || isAlreadyBooked}
+                              >
+                                {isAlreadyBooked ? 'Booked' : isFull ? 'Full' : 'Book Now'}
+                              </Button>
                             </div>
-                            <Button
-                              size="sm"
-                              onClick={() => handleBookCourse(batch.batchid, course.fees)}
-                              disabled={batch.seats_booked >= batch.seats_total}
-                            >
-                              {batch.seats_booked >= batch.seats_total ? 'Full' : 'Book Now'}
-                            </Button>
-                          </div>
-                        ))} 
+                          )
+                        })}
+                        {course.batches.length > 2 && (
+                          <p className="text-xs text-muted-foreground text-center pt-2">
+                            +{course.batches.length - 2} more batch{course.batches.length - 2 !== 1 ? 'es' : ''} available
+                          </p>
+                        )}
                       </div>
                     )}
                   </CardContent>
@@ -349,8 +391,28 @@ export default function SeafarerDashboard() {
               <Card>
                 <CardContent className="text-center py-12">
                   <AlertCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-lg font-medium mb-2">No courses found</p>
-                  <p className="text-muted-foreground">Try adjusting your filters</p>
+                  <p className="text-lg font-medium mb-2">
+                    {courses.length === 0 ? 'No courses available' : 'No courses found'}
+                  </p>
+                  <p className="text-muted-foreground">
+                    {courses.length === 0
+                      ? 'No courses with upcoming batches are currently available. Please check back later.'
+                      : 'Try adjusting your filters to see more results'}
+                  </p>
+                  {(searchQuery || cityFilter || typeFilter || modeFilter) && (
+                    <Button
+                      variant="outline"
+                      className="mt-4"
+                      onClick={() => {
+                        setSearchQuery('')
+                        setCityFilter('')
+                        setTypeFilter('')
+                        setModeFilter('')
+                      }}
+                    >
+                      Clear All Filters
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             )}
@@ -377,22 +439,60 @@ export default function SeafarerDashboard() {
                       const batch = courses.flatMap(c => c.batches || []).find(b => b.batchid === booking.batchid)
                       const course = courses.find(c => c.batches?.some(b => b.batchid === booking.batchid))
 
+                      const bookingDate = new Date(booking.booking_date)
+                      const batchStartDate = batch ? new Date(batch.start_date) : null
+                      const isUpcoming = batchStartDate && batchStartDate > new Date()
+
                       return (
                         <Card key={booking.bookid}>
                           <CardContent className="pt-6">
-                            <div className="flex justify-between items-start">
+                            <div className="flex justify-between items-start gap-4">
                               <div className="flex-1">
-                                <h3 className="font-semibold text-lg">{course?.title}</h3>
-                                <p className="text-sm text-muted-foreground">{batch?.batch_name}</p>
-                                <div className="mt-3 space-y-1 text-sm">
-                                  <p><span className="font-medium">Confirmation:</span> {booking.confirmation_number}</p>
-                                  <p><span className="font-medium">Dates:</span> {batch && `${new Date(batch.start_date).toLocaleDateString()} - ${new Date(batch.end_date).toLocaleDateString()}`}</p>
-                                  <p><span className="font-medium">Location:</span> {batch?.location}</p>
-                                  <p><span className="font-medium">Amount:</span> ₹{booking.amount.toLocaleString()}</p>
+                                <div className="flex items-start justify-between mb-2">
+                                  <div>
+                                    <h3 className="font-semibold text-lg">{course?.title || 'Course Details'}</h3>
+                                    <p className="text-sm text-muted-foreground">{batch?.batch_name || 'Batch Information'}</p>
+                                  </div>
+                                  {isUpcoming && (
+                                    <Badge variant="outline" className="bg-blue-50">
+                                      <Clock className="h-3 w-3 mr-1" />
+                                      Upcoming
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="mt-3 space-y-2 text-sm">
+                                  <div className="grid md:grid-cols-2 gap-2">
+                                    <p><span className="font-medium">Confirmation:</span> {booking.confirmation_number}</p>
+                                    <p><span className="font-medium">Booked on:</span> {bookingDate.toLocaleDateString()}</p>
+                                    {batch && (
+                                      <>
+                                        <p className="flex items-center gap-1">
+                                          <Calendar className="h-3 w-3" />
+                                          <span className="font-medium">Start:</span> {new Date(batch.start_date).toLocaleDateString()}
+                                        </p>
+                                        <p className="flex items-center gap-1">
+                                          <Calendar className="h-3 w-3" />
+                                          <span className="font-medium">End:</span> {new Date(batch.end_date).toLocaleDateString()}
+                                        </p>
+                                      </>
+                                    )}
+                                    {batch?.location && (
+                                      <p className="flex items-center gap-1">
+                                        <MapPin className="h-3 w-3" />
+                                        {batch.location}
+                                      </p>
+                                    )}
+                                    {course?.institute && (
+                                      <p><span className="font-medium">Institute:</span> {course.institute.name}</p>
+                                    )}
+                                  </div>
+                                  <div className="pt-2 border-t">
+                                    <p className="text-base"><span className="font-medium">Amount Paid:</span> ₹{booking.amount.toLocaleString()}</p>
+                                  </div>
                                 </div>
                               </div>
                               <div className="text-right space-y-2">
-                                <Badge variant={booking.payment_status === 'completed' ? 'default' : 'secondary'}>
+                                <Badge variant={booking.payment_status === 'completed' ? 'default' : booking.payment_status === 'pending' ? 'secondary' : 'destructive'}>
                                   {booking.payment_status}
                                 </Badge>
                                 <Badge variant="outline">

@@ -1,8 +1,7 @@
-import { useState } from 'react'
-import { AuthProvider, useAuth } from '@/hooks/useAuth'
-import { RoleGuard } from '@/components/RoleGuard'
-import Navbar from '@/components/layout/Navbar'
-import Footer from '@/components/layout/Footer'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { AuthProvider } from '@/hooks/useAuth'
+import { ProtectedRoute } from '@/components/ProtectedRoute'
+import Layout from '@/components/layout/Layout'
 import HomePage from '@/pages/HomePage'
 import CourseCatalog from '@/pages/CourseCatalog'
 import CourseDetail from '@/pages/CourseDetail'
@@ -16,143 +15,66 @@ import AdminDashboard from '@/pages/admin/AdminDashboard'
 import NotFound from '@/pages/NotFound'
 import { Toaster } from '@/components/ui/toaster'
 
-type Page =
-  | 'home'
-  | 'catalog'
-  | 'course'
-  | 'learn'
-  | 'sign-in'
-  | 'sign-up-student'
-  | 'register-institute'
-  | 'student-dashboard'
-  | 'instructor-dashboard'
-  | 'admin-dashboard'
-  | 'dashboard'
-  | 'user-management'
-  | 'course-editor'
-  | 'not-found'
-
-function AppContent() {
-  const { user } = useAuth()
-  const [currentPage, setCurrentPage] = useState<Page>(() => {
-    if (user) {
-      switch (user.role) {
-        case 'admin':
-          return 'admin-dashboard'
-        case 'institute':
-          return 'instructor-dashboard'
-        case 'student':
-          return 'student-dashboard'
-        default:
-          return 'home'
-      }
-    }
-    return 'home'
-  })
-  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null)
-
-  const handleNavigate = (page: string, courseId?: string) => {
-    setCurrentPage(page as Page)
-    if (courseId) {
-      setSelectedCourseId(courseId)
-    }
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-
-  const renderPage = () => {
-    switch (currentPage) {
-      case 'home':
-        return <HomePage onNavigate={handleNavigate} />
-
-      case 'catalog':
-        return <CourseCatalog onNavigate={handleNavigate} />
-
-      case 'course':
-        return selectedCourseId ? (
-          <CourseDetail courseId={selectedCourseId} onNavigate={handleNavigate} />
-        ) : (
-          <CourseCatalog onNavigate={handleNavigate} />
-        )
-
-      case 'learn':
-        return selectedCourseId ? (
-          <LearningInterface courseId={selectedCourseId} onNavigate={handleNavigate} />
-        ) : (
-          <StudentDashboard onNavigate={handleNavigate} />
-        )
-
-      case 'sign-in':
-        return <SignIn onNavigate={handleNavigate} />
-
-      case 'sign-up-student':
-        return <SignUpStudent onNavigate={handleNavigate} />
-
-      case 'register-institute':
-        return <RegisterInstitute onNavigate={handleNavigate} />
-
-      case 'dashboard':
-        if (user?.role === 'admin') return <AdminDashboard onNavigate={handleNavigate} />
-        if (user?.role === 'institute') return <InstructorDashboard onNavigate={handleNavigate} />
-        return <StudentDashboard onNavigate={handleNavigate} />
-
-      case 'student-dashboard':
-        return (
-          <RoleGuard allowedRoles={['student']} onNavigate={handleNavigate}>
-            <StudentDashboard onNavigate={handleNavigate} />
-          </RoleGuard>
-        )
-
-      case 'instructor-dashboard':
-        return (
-          <RoleGuard allowedRoles={['institute']} onNavigate={handleNavigate}>
-            <InstructorDashboard onNavigate={handleNavigate} />
-          </RoleGuard>
-        )
-
-      case 'admin-dashboard':
-        return (
-          <RoleGuard allowedRoles={['admin']} onNavigate={handleNavigate}>
-            <AdminDashboard onNavigate={handleNavigate} />
-          </RoleGuard>
-        )
-
-      case 'user-management':
-        return (
-          <RoleGuard allowedRoles={['admin']} onNavigate={handleNavigate}>
-            <AdminDashboard onNavigate={handleNavigate} />
-          </RoleGuard>
-        )
-
-      case 'course-editor':
-        return (
-          <RoleGuard allowedRoles={['institute', 'admin']} onNavigate={handleNavigate}>
-            <InstructorDashboard onNavigate={handleNavigate} />
-          </RoleGuard>
-        )
-
-      default:
-        return <NotFound onNavigate={handleNavigate} />
-    }
-  }
-
-  const showLayout = currentPage !== 'learn' && currentPage !== 'sign-in' && currentPage !== 'sign-up-student' && currentPage !== 'register-institute'
-
-  return (
-    <div className="flex flex-col min-h-screen">
-      {showLayout && <Navbar onNavigate={handleNavigate} currentPage={currentPage} />}
-      <main className={showLayout ? 'flex-1' : ''}>
-        {renderPage()}
-      </main>
-      {showLayout && <Footer />}
-      <Toaster />
-    </div>
-  )
-}
-
 function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Layout />}>
+            <Route index element={<HomePage />} />
+            <Route path="courses" element={<CourseCatalog />} />
+            <Route path="course/:courseId" element={<CourseDetail />} />
+          </Route>
+
+          <Route path="/sign-in" element={<SignIn />} />
+          <Route path="/sign-up" element={<SignUpStudent />} />
+          <Route path="/register-institute" element={<RegisterInstitute />} />
+
+          <Route path="/student" element={<Layout />}>
+            <Route
+              index
+              element={
+                <ProtectedRoute allowedRoles={['student']}>
+                  <StudentDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="learn/:courseId"
+              element={
+                <ProtectedRoute allowedRoles={['student']}>
+                  <LearningInterface />
+                </ProtectedRoute>
+              }
+            />
+          </Route>
+
+          <Route path="/institutes" element={<Layout />}>
+            <Route
+              index
+              element={
+                <ProtectedRoute allowedRoles={['institute']}>
+                  <InstructorDashboard />
+                </ProtectedRoute>
+              }
+            />
+          </Route>
+
+          <Route path="/admin" element={<Layout />}>
+            <Route
+              index
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+          </Route>
+
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+        <Toaster />
+      </BrowserRouter>
     </AuthProvider>
   )
 }

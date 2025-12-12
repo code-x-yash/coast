@@ -51,7 +51,7 @@ export const courseService = {
   async getCourses(filters?: {
     type?: string
     mode?: string
-    search?: string
+    search?: string 
     limit?: number
   }) {
     let query = supabase

@@ -1,6 +1,14 @@
 # Maritime Training Platform API
 
-FastAPI backend for the Maritime Training Course Aggregator Platform.
+Complete REST API backend for the Maritime Training Course Aggregator Platform built with FastAPI.
+
+## Features
+
+- JWT-based authentication
+- Role-based access control (Student, Institute, Admin)
+- Complete CRUD operations for all entities
+- Supabase integration
+- Automatic API documentation
 
 ## Setup
 
@@ -31,6 +39,12 @@ Edit `.env` with your actual values:
 uvicorn main:app --reload
 ```
 
+Or use the Python script directly:
+
+```bash
+python main.py
+```
+
 API will be available at: `http://localhost:8000`
 
 API documentation: `http://localhost:8000/docs`
@@ -39,111 +53,94 @@ API documentation: `http://localhost:8000/docs`
 
 ```
 api/
-├── main.py                 # FastAPI app initialization
+├── main.py                 # FastAPI app initialization with all routers
 ├── config.py               # Configuration and environment variables
+├── database.py             # Supabase client setup
+├── auth.py                 # Authentication utilities and dependencies
+├── schemas.py              # Pydantic models for request/response
 ├── requirements.txt        # Python dependencies
 │
-├── models/                 # Pydantic models for request/response
-│   ├── __init__.py
-│   ├── user.py
-│   ├── institute.py
-│   ├── course.py
-│   ├── master_course.py
-│   └── commission.py
-│
-├── routes/                 # API endpoints
-│   ├── __init__.py
-│   ├── auth.py            # Authentication endpoints
-│   ├── users.py           # User management
-│   ├── institutes.py      # Institute operations
-│   ├── courses.py         # Course operations
-│   ├── master_courses.py  # Master course catalog
-│   ├── applications.py    # Institute course applications
-│   └── admin.py           # Admin operations
-│
-├── services/              # Business logic
-│   ├── __init__.py
-│   ├── auth_service.py
-│   ├── institute_service.py
-│   └── course_service.py
-│
-└── utils/                 # Utility functions
-    ├── __init__.py
-    ├── security.py        # JWT, password hashing
-    └── validators.py      # Input validation
+└── routes/                 # API endpoints
+    ├── auth_routes.py      # Authentication endpoints
+    ├── student_routes.py   # Student profile management
+    ├── institute_routes.py # Institute operations
+    ├── course_routes.py    # Course management
+    ├── batch_routes.py     # Batch scheduling
+    ├── booking_routes.py   # Course bookings
+    ├── certificate_routes.py # Certificate management
+    └── admin_routes.py     # Admin operations
 ```
 
-## Next Steps
+## API Endpoints
 
-### 1. Implement Core Endpoints
+### Authentication (`/auth`)
+- `POST /auth/signup/student` - Register new student
+- `POST /auth/signup/institute` - Register new institute
+- `POST /auth/login` - Login user
 
-Create route files in `routes/` directory:
+### Students (`/students`)
+- `GET /students/me` - Get current student profile
+- `PUT /students/me` - Update student profile
+- `GET /students/{id}` - Get student by ID
 
-**auth.py** - Authentication
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - User login
-- `GET /api/auth/me` - Get current user
+### Institutes (`/institutes`)
+- `GET /institutes/me` - Get current institute profile
+- `GET /institutes/{id}` - Get institute by ID
+- `POST /institutes/reactivation-request` - Submit reactivation request
+- `GET /institutes/reactivation-requests/me` - Get my reactivation requests
 
-**master_courses.py** - Master Course Catalog
-- `GET /api/master-courses` - List all courses
-- `GET /api/master-courses/{id}` - Get course details
+### Courses (`/courses`)
+- `GET /courses` - List all active courses (supports filters: type, mode, search)
+- `GET /courses/{id}` - Get course details
+- `POST /courses` - Create new course (Institute only)
+- `GET /courses/institute/my-courses` - Get institute's courses
+- `PUT /courses/{id}/status` - Update course status
+- `GET /courses/master-courses` - Get master course catalog
 
-**institutes.py** - Institute Management
-- `POST /api/institutes/register` - Register institute
-- `POST /api/institutes/apply-courses` - Apply for courses
-- `GET /api/institutes/{id}/applications` - Get applications
+### Batches (`/batches`)
+- `GET /batches` - List batches (filters: course_id, status)
+- `GET /batches/{id}` - Get batch details
+- `POST /batches` - Create new batch (Institute only)
+- `GET /batches/institute/my-batches` - Get institute's batches
+- `PUT /batches/{id}/status` - Update batch status
 
-**admin.py** - Admin Operations
-- `GET /api/admin/applications/pending` - Pending applications
-- `PUT /api/admin/applications/{id}/approve` - Approve with commission
-- `PUT /api/admin/institutes/{id}/commission` - Set default commission
+### Bookings (`/bookings`)
+- `POST /bookings` - Create new booking (Student only)
+- `GET /bookings/my-bookings` - Get student's bookings
+- `GET /bookings/{id}` - Get booking details
+- `PUT /bookings/{id}/payment-status` - Update payment status
+- `GET /bookings/batch/{id}/bookings` - Get all bookings for a batch
 
-### 2. Implement Authentication
+### Certificates (`/certificates`)
+- `POST /certificates` - Issue certificate (Institute only)
+- `GET /certificates/my-certificates` - Get student's certificates (Student)
+- `GET /certificates/institute/my-certificates` - Get institute's certificates (Institute)
+- `GET /certificates/{id}` - Get certificate details
+- `PUT /certificates/{id}/dgshipping-upload` - Mark as uploaded to DGShipping
 
-Create `utils/security.py` with JWT token management:
+### Admin (`/admin`)
+- `GET /admin/institutes` - List all institutes (filter by verified_status)
+- `PUT /admin/institutes/{id}/verify` - Verify/reject institute
+- `GET /admin/reactivation-requests` - List reactivation requests (filter by status)
+- `PUT /admin/reactivation-requests/{id}` - Approve/reject reactivation request
+- `GET /admin/bookings` - List all bookings (filter by payment_status)
+- `GET /admin/stats` - Get platform statistics
+- `GET /admin/institute-course-applications` - List course applications (filter by status)
+- `PUT /admin/institute-course-applications/{id}` - Update application status
 
-```python
-from jose import JWTError, jwt
-from passlib.context import CryptContext
-from datetime import datetime, timedelta
+## Authentication
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+Most endpoints require authentication using JWT tokens. Include the token in the Authorization header:
 
-def verify_password(plain_password: str, hashed_password: str):
-    return pwd_context.verify(plain_password, hashed_password)
-
-def get_password_hash(password: str):
-    return pwd_context.hash(password)
-
-def create_access_token(data: dict):
-    # Implementation here
-    pass
+```
+Authorization: Bearer <your_token>
 ```
 
-### 3. Implement Supabase Client
+## User Roles
 
-Create `database.py`:
-
-```python
-from supabase import create_client, Client
-from config import settings
-
-supabase: Client = create_client(
-    settings.supabase_url,
-    settings.supabase_service_key
-)
-
-def get_supabase() -> Client:
-    return supabase
-```
-
-### 4. Create Pydantic Models
-
-Define request/response models in `models/` directory.
-
-### 5. Add Business Logic
-
-Implement services in `services/` directory for complex operations.
+- **Student**: Can browse courses, book batches, view certificates
+- **Institute**: Can create courses/batches, manage enrollments, issue certificates
+- **Admin**: Full platform management access
 
 ## Testing
 

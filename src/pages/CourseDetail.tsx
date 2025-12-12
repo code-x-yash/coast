@@ -80,7 +80,7 @@ export default function CourseDetail() {
     try {
       const { data: studentData, error: studentError } = await supabase
         .from('students')
-        .select('studentid')
+        .select('studid')
         .eq('userid', user.id)
         .maybeSingle()
 
@@ -88,20 +88,18 @@ export default function CourseDetail() {
       if (!studentData) {
         toast({
           title: 'Profile Not Found',
-          description: 'Please complete your profile first.',
+          description: 'Please complete your seafarer profile first.',
           variant: 'destructive'
         })
         return
       }
 
       const bookingData = {
-        studentid: studentData.studentid,
-        courseid: courseId,
+        studid: studentData.studid,
         batchid: selectedBatch.batchid,
         booking_date: new Date().toISOString(),
-        booking_status: 'pending',
         payment_status: 'pending',
-        amount_paid: course?.fees || 0
+        amount: course?.fees || 0
       }
 
       const { error: bookingError } = await supabase
@@ -330,10 +328,10 @@ export default function CourseDetail() {
                         <span>•</span>
                         <span>End: {new Date(batch.end_date).toLocaleDateString()}</span>
                       </div>
-                      {batch.max_students && (
+                      {batch.seats_total && (
                         <div className="flex items-center gap-1 mt-1 text-sm text-muted-foreground">
                           <Users className="h-4 w-4" />
-                          <span>Capacity: {batch.max_students} students</span>
+                          <span>Capacity: {batch.seats_booked || 0}/{batch.seats_total} students</span>
                         </div>
                       )}
                     </div>
@@ -358,7 +356,7 @@ export default function CourseDetail() {
           </DialogHeader>
 
           <div className="space-y-3 max-h-96 overflow-y-auto">
-            {batches.filter(b => b.batch_status === 'active').map((batch) => (
+            {batches.filter(b => ['active', 'upcoming'].includes(b.batch_status)).map((batch) => (
               <div
                 key={batch.batchid}
                 className={`p-4 border rounded-lg cursor-pointer transition-all ${
@@ -379,10 +377,10 @@ export default function CourseDetail() {
                       <span>to</span>
                       <span>{new Date(batch.end_date).toLocaleDateString()}</span>
                     </div>
-                    {batch.max_students && (
+                    {batch.seats_total && (
                       <div className="flex items-center gap-1 mt-1 text-sm text-muted-foreground">
                         <Users className="h-4 w-4" />
-                        <span>Max {batch.max_students} students</span>
+                        <span>{batch.seats_booked || 0}/{batch.seats_total} seats</span>
                       </div>
                     )}
                   </div>
@@ -396,9 +394,9 @@ export default function CourseDetail() {
             ))}
           </div>
 
-          {batches.filter(b => b.batch_status === 'active').length === 0 && (
+          {batches.filter(b => ['active', 'upcoming'].includes(b.batch_status)).length === 0 && (
             <p className="text-center text-muted-foreground py-8">
-              No active batches available at the moment.
+              No available batches at the moment.
             </p>
           )}
 

@@ -33,6 +33,7 @@ interface AuthContextType {
     city?: string
     state?: string
     documents?: any[]
+    selectedCourses?: string[]
   }) => Promise<void>
 }
 
@@ -141,6 +142,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     city?: string
     state?: string
     documents?: any[]
+    selectedCourses?: string[]
   }) => {
     if (formData.password !== formData.confirmPassword) {
       throw new Error('Passwords do not match')
@@ -153,20 +155,78 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
 
     if (authData.user) {
-      await supabase.from('institutes').insert({
-        userid: authData.user.id,
-        name: formData.instituteName,
-        accreditation_no: formData.accreditation_no,
-        valid_from: formData.valid_from,
-        valid_to: formData.valid_to,
-        contact_email: formData.email,
-        contact_phone: formData.phone,
-        address: formData.address,
-        city: formData.city,
-        state: formData.state,
-        verified_status: 'pending',
-        documents: formData.documents || []
-      })
+      const { data: instituteData, error: instituteError } = await supabase
+        .from('institutes')
+        .insert({
+          userid: authData.user.id,
+          name: formData.instituteName,
+          accreditation_no: formData.accreditation_no,
+          valid_from: formData.valid_from,
+          valid_to: formData.valid_to,
+          contact_email: formData.email,
+          contact_phone: formData.phone,
+          address: formData.address,
+          city: formData.city,
+          state: formData.state,
+          verified_status: 'pending',
+          documents: formData.documents || []
+        })
+        .select('instid')
+        .single()
+
+      if (instituteError) throw instituteError
+
+      if (formData.selectedCourses && formData.selectedCourses.length > 0) {
+        const applications = formData.selectedCourses.map(courseId => ({
+          instid: instituteData.instid,
+          master_course_id: courseId,
+          status: 'pending'
+        }))
+
+        const { data: createdApplications, error: applicationsError } = await supabase
+          .from('institute_course_applications')
+          .insert(applications)
+          .select('application_id, master_course_id')
+
+        if (applicationsError) {
+          console.error('Failed to create course applications:', applicationsError)
+        }
+
+        if (createdApplications && createdApplications.length > 0) {
+          const { data: masterCoursesData, error: masterCoursesError } = await supabase
+            .from('master_courses')
+            .select('master_course_id, course_name, course_code, category, description')
+            .in('master_course_id', formData.selectedCourses)
+
+          if (!masterCoursesError && masterCoursesData) {
+            const coursesToCreate = masterCoursesData.map(mc => {
+              const application = createdApplications.find(app => app.master_course_id === mc.master_course_id)
+              return {
+                instid: instituteData.instid,
+                title: mc.course_name,
+                type: mc.category === 'STCW' ? 'STCW' : mc.category === 'Navigation' || mc.category === 'Management' ? 'Technical' : 'Other',
+                duration: '5 days',
+                mode: 'offline',
+                fees: 15000,
+                description: mc.description,
+                validity_months: 60,
+                accreditation_ref: mc.course_code,
+                status: 'active',
+                master_course_id: mc.master_course_id,
+                application_id: application?.application_id
+              }
+            })
+
+            const { error: coursesError } = await supabase
+              .from('courses')
+              .insert(coursesToCreate)
+
+            if (coursesError) {
+              console.error('Failed to create courses:', coursesError)
+            }
+          }
+        }
+      }
 
       const profile = await authService.getCurrentUser()
       setUser(profile)

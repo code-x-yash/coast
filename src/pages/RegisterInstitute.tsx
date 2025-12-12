@@ -7,8 +7,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Textarea } from '@/components/ui/textarea'
+import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from '@/hooks/use-toast'
-import { Building2 } from 'lucide-react'
+import { Building2, GraduationCap } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
+
+interface MasterCourse {
+  master_course_id: string
+  course_name: string
+  course_code: string
+  category: string
+  description: string
+}
 
 export default function RegisterInstitute() {
   const navigate = useNavigate()
@@ -27,8 +37,33 @@ export default function RegisterInstitute() {
     city: '',
     state: '',
   })
+  const [masterCourses, setMasterCourses] = useState<MasterCourse[]>([])
+  const [selectedCourses, setSelectedCourses] = useState<string[]>([])
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [loadingCourses, setLoadingCourses] = useState(true)
+
+  useEffect(() => {
+    loadMasterCourses()
+  }, [])
+
+  const loadMasterCourses = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('master_courses')
+        .select('master_course_id, course_name, course_code, category, description')
+        .eq('is_active', true)
+        .order('category', { ascending: true })
+        .order('course_name', { ascending: true })
+
+      if (error) throw error
+      setMasterCourses(data || [])
+    } catch (err) {
+      console.error('Failed to load master courses:', err)
+    } finally {
+      setLoadingCourses(false)
+    }
+  }
 
   if (user) {
     navigate('/institutes')
@@ -41,6 +76,22 @@ export default function RegisterInstitute() {
       [e.target.name]: e.target.value
     }))
   }
+
+  const handleCourseToggle = (courseId: string) => {
+    setSelectedCourses(prev =>
+      prev.includes(courseId)
+        ? prev.filter(id => id !== courseId)
+        : [...prev, courseId]
+    )
+  }
+
+  const groupedCourses = masterCourses.reduce((acc, course) => {
+    if (!acc[course.category]) {
+      acc[course.category] = []
+    }
+    acc[course.category].push(course)
+    return acc
+  }, {} as Record<string, MasterCourse[]>)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -66,10 +117,18 @@ export default function RegisterInstitute() {
       return
     }
 
+    if (selectedCourses.length === 0) {
+      setError('Please select at least one course you want to offer')
+      return
+    }
+
     setLoading(true)
 
     try {
-      await registerInstitute(formData)
+      await registerInstitute({
+        ...formData,
+        selectedCourses
+      })
       toast({
         title: 'Registration Successful!',
         description: 'Your institute has been registered. Awaiting admin verification.',
@@ -247,6 +306,71 @@ export default function RegisterInstitute() {
                       </div>
                     </div>
                   </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <GraduationCap className="h-5 w-5 text-primary" />
+                    <h3 className="font-semibold text-sm">Select Courses to Offer</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Choose which maritime training courses your institute would like to offer. Your applications will be reviewed by admin.
+                  </p>
+
+                  {loadingCourses ? (
+                    <div className="py-8 text-center">
+                      <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto"></div>
+                      <p className="text-sm text-muted-foreground mt-2">Loading courses...</p>
+                    </div>
+                  ) : (
+                    <div className="border rounded-lg p-4 max-h-96 overflow-y-auto space-y-4">
+                      {Object.keys(groupedCourses).length === 0 ? (
+                        <p className="text-sm text-muted-foreground text-center py-4">
+                          No courses available at the moment
+                        </p>
+                      ) : (
+                        Object.entries(groupedCourses).map(([category, courses]) => (
+                          <div key={category} className="space-y-3">
+                            <h4 className="font-medium text-sm text-primary border-b pb-2">
+                              {category}
+                            </h4>
+                            <div className="space-y-2">
+                              {courses.map((course) => (
+                                <div
+                                  key={course.master_course_id}
+                                  className="flex items-start gap-3 p-2 rounded hover:bg-muted/50 transition-colors"
+                                >
+                                  <Checkbox
+                                    id={course.master_course_id}
+                                    checked={selectedCourses.includes(course.master_course_id)}
+                                    onCheckedChange={() => handleCourseToggle(course.master_course_id)}
+                                  />
+                                  <div className="flex-1">
+                                    <Label
+                                      htmlFor={course.master_course_id}
+                                      className="cursor-pointer font-medium text-sm"
+                                    >
+                                      {course.course_name}
+                                    </Label>
+                                    <p className="text-xs text-muted-foreground">
+                                      {course.course_code}
+                                      {course.description && ` • ${course.description}`}
+                                    </p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+
+                  {selectedCourses.length > 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      Selected {selectedCourses.length} {selectedCourses.length === 1 ? 'course' : 'courses'}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-4">

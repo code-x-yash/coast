@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { mockCourses, type Course } from '@/data/mock'
+import { courseService, type Course } from '@/services/courses'
 import { Star, Clock, Users, Award, Anchor, Ship, TrendingUp } from 'lucide-react'
 
 export default function HomePage() {
@@ -17,7 +17,7 @@ export default function HomePage() {
 
   const loadFeaturedCourses = async () => {
     try {
-      const courses = mockCourses.filter(c => c.isFeatured === '1').slice(0, 3)
+      const courses = await courseService.getCourses({ limit: 3 })
       setFeaturedCourses(courses)
     } catch (error) {
       console.error('Failed to load courses:', error)
@@ -189,19 +189,15 @@ export default function HomePage() {
           ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {featuredCourses.map((course) => (
-                <Card 
-                  key={course.id} 
+                <Card
+                  key={course.courseid}
                   className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group"
-                  onClick={() => navigate(`/course/${course.id}`)}
+                  onClick={() => navigate(`/course/${course.courseid}`)}
                 >
-                  <div className="relative h-48 overflow-hidden">
-                    <img
-                      src={course.thumbnailUrl || 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=800&q=80'}
-                      alt={course.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
+                  <div className="relative h-48 overflow-hidden bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center">
+                    <Ship className="h-24 w-24 text-primary/20" />
                     <Badge className="absolute top-4 left-4 bg-white/95 text-foreground backdrop-blur shadow-md font-medium">
-                      {course.category}
+                      {course.type}
                     </Badge>
                   </div>
                   <CardContent className="p-6">
@@ -209,28 +205,27 @@ export default function HomePage() {
                       {course.title}
                     </h3>
                     <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                      {course.description}
+                      {course.description || 'Professional maritime training course'}
                     </p>
-                    
+
                     <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
                       <div className="flex items-center gap-1">
-                        <Star className="h-4 w-4 fill-primary text-primary" />
-                        <span className="font-medium text-foreground">{course.rating}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
                         <Clock className="h-4 w-4" />
-                        <span>{course.durationHours}h</span>
+                        <span>{course.duration}</span>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Users className="h-4 w-4" />
-                        <span>{course.totalStudents.toLocaleString()}</span>
-                      </div>
+                      <Badge variant="secondary" className="text-xs">
+                        {course.mode}
+                      </Badge>
                     </div>
 
                     <div className="flex items-center justify-between">
-                      <Badge variant="secondary">{course.level}</Badge>
-                      <div className="text-xl font-bold text-primary">
-                        ${course.price}
+                      {course.institutes?.name && (
+                        <span className="text-xs text-muted-foreground truncate flex-1">
+                          {course.institutes.name}
+                        </span>
+                      )}
+                      <div className="text-xl font-bold text-primary whitespace-nowrap ml-2">
+                        ₹{Number(course.fees).toLocaleString()}
                       </div>
                     </div>
                   </CardContent>

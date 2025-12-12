@@ -6,16 +6,8 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Copy, Check } from 'lucide-react'
+import { Anchor } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
-
-const demoCredentials = [
-  { email: 'admin@maritimetraining.in', password: 'hashed_password', role: 'Super Admin', description: 'Platform administration & institute verification' },
-  { email: 'admin@mumbaimaritime.edu.in', password: 'hashed_password', role: 'Institute', description: 'Mumbai Maritime Institute' },
-  { email: 'contact@chennaiacademy.in', password: 'hashed_password', role: 'Institute', description: 'Chennai Maritime Academy' },
-  { email: 'rajesh.sharma@seafarer.in', password: 'hashed_password', role: 'Seafarer', description: 'Third Officer - Browse & book courses' },
-  { email: 'priya.singh@seafarer.in', password: 'hashed_password', role: 'Seafarer', description: 'Second Officer - Browse & book courses' },
-]
 
 export default function SignIn() {
   const { signIn, user } = useAuth()
@@ -24,7 +16,6 @@ export default function SignIn() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [copiedIndex, setCopiedIndex] = useState<number | null>(null)
 
   useEffect(() => {
     if (user) {
@@ -49,193 +40,104 @@ export default function SignIn() {
         description: 'You have successfully signed in.',
       })
     } catch (err: any) {
-      setError(err.message || 'Failed to sign in')
+      setError(err.message || 'Invalid email or password')
     } finally {
       setLoading(false)
     }
   }
 
-  const copyToClipboard = (text: string, index: number) => {
-    navigator.clipboard.writeText(text)
-    setCopiedIndex(index)
-    setTimeout(() => setCopiedIndex(null), 2000)
-    toast({
-      title: 'Copied!',
-      description: 'Credential copied to clipboard',
-    })
-  }
-
-  const quickLogin = (email: string, password: string) => {
-    setEmail(email)
-    setPassword(password)
-  }
-
   return (
-    <div className="min-h-screen py-12 bg-gradient-to-br from-primary/5 via-accent/5 to-background">
-      <div className="container mx-auto px-4">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold mb-2">Maritime Training Platform</h1>
-            <p className="text-muted-foreground">
-              Sign in to access accredited maritime training courses
-            </p>
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary/5 via-background to-accent/5">
+      <div className="w-full max-w-md space-y-6">
+        <div className="flex flex-col items-center text-center space-y-2">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 border border-primary/20">
+            <Anchor className="h-8 w-8 text-primary" />
           </div>
-
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Sign In Form */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Sign In</CardTitle>
-                <CardDescription>
-                  Enter your credentials to access your account
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="you@example.com"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="password">Password</Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      required
-                    />
-                  </div>
-                  {error && (
-                    <Alert variant="destructive">
-                      <AlertDescription>{error}</AlertDescription>
-                    </Alert>
-                  )}
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? 'Signing in...' : 'Sign In'}
-                  </Button>
-                  <div className="text-center space-y-2 pt-4 border-t">
-                    <p className="text-sm text-muted-foreground">
-                      Don't have an account?
-                    </p>
-                    <div className="flex gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => navigate('/sign-up')}
-                        className="flex-1"
-                      >
-                        Student Signup
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => navigate('/register-institute')}
-                        className="flex-1"
-                      >
-                        Institute Signup
-                      </Button>
-                    </div>
-                  </div>
-                </form>
-              </CardContent>
-            </Card>
-
-            {/* Demo Credentials */}
-            <Card className="border-primary/50 bg-primary/5">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                  Demo Credentials
-                </CardTitle>
-                <CardDescription>
-                  Use these credentials to explore different roles
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {demoCredentials.map((cred, index) => (
-                    <div
-                      key={index}
-                      className="p-3 bg-background rounded-lg border hover:border-primary/50 transition-colors cursor-pointer"
-                      onClick={() => quickLogin(cred.email, cred.password)}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-semibold text-sm">{cred.role}</span>
-                            <span className="text-xs text-muted-foreground">
-                              {cred.description}
-                            </span>
-                          </div>
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <code className="text-xs bg-muted px-2 py-1 rounded flex-1 truncate">
-                                {cred.email}
-                              </code>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 w-6 p-0"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  copyToClipboard(cred.email, index * 2)
-                                }}
-                              >
-                                {copiedIndex === index * 2 ? (
-                                  <Check className="h-3 w-3 text-green-600" />
-                                ) : (
-                                  <Copy className="h-3 w-3" />
-                                )}
-                              </Button>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <code className="text-xs bg-muted px-2 py-1 rounded flex-1">
-                                {cred.password}
-                              </code>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 w-6 p-0"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  copyToClipboard(cred.password, index * 2 + 1)
-                                }}
-                              >
-                                {copiedIndex === index * 2 + 1 ? (
-                                  <Check className="h-3 w-3 text-green-600" />
-                                ) : (
-                                  <Copy className="h-3 w-3" />
-                                )}
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <Alert className="mt-4">
-                  <AlertDescription className="text-xs">
-                    <strong>Tip:</strong> Click any credential card to auto-fill the form, or use the copy buttons to copy individual values.
-                  </AlertDescription>
-                </Alert>
-              </CardContent>
-            </Card>
-          </div>
+          <h1 className="text-3xl font-bold">Welcome Back</h1>
+          <p className="text-muted-foreground">Sign in to your SeaLearn account</p>
         </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Sign In</CardTitle>
+            <CardDescription>
+              Enter your credentials to access your account
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {error && (
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="your.email@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  disabled={loading}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  disabled={loading}
+                />
+              </div>
+
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? 'Signing in...' : 'Sign In'}
+              </Button>
+            </form>
+
+            <div className="mt-6 space-y-4">
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">
+                    Don't have an account?
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => navigate('/sign-up')}
+                >
+                  Sign Up as Student
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => navigate('/register-institute')}
+                >
+                  Register Institute
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <p className="text-center text-sm text-muted-foreground">
+          By signing in, you agree to our Terms of Service and Privacy Policy
+        </p>
       </div>
     </div>
   )

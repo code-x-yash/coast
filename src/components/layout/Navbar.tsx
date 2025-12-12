@@ -6,7 +6,6 @@ import { Search, Menu, BookOpen, ChevronRight, Anchor, Ship, Compass } from 'luc
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { useAuth } from '@/hooks/useAuth'
 import { UserMenu } from '@/components/UserMenu'
-import { RoleSwitcher } from '@/components/RoleSwitcher'
 
 // Merchant Navy Course Categories with Specializations
 const courseCategories = [
@@ -339,10 +338,7 @@ export default function Navbar() {
           {/* Auth Buttons */}
           <div className="flex items-center gap-3">
             {user ? (
-              <>
-                <RoleSwitcher />
-                <UserMenu />
-              </>
+              <UserMenu />
             ) : (
               <>
                 <Button variant="ghost" onClick={() => navigate('/sign-in')} className="hidden sm:inline-flex text-white hover:text-white hover:bg-white/20">

@@ -53,6 +53,8 @@ export const courseService = {
     mode?: string
     search?: string
     limit?: number
+    instituteId?: string
+    approvalStatus?: string
   }) {
     let query = supabase
       .from('courses')
@@ -61,7 +63,10 @@ export const courseService = {
         institutes!inner(name, city, verified_status)
       `)
       .eq('status', 'active')
-      .eq('institutes.verified_status', 'verified')
+
+    if (!filters?.instituteId) {
+      query = query.eq('institutes.verified_status', 'verified')
+    }
 
     if (filters?.type) {
       query = query.eq('type', filters.type)
@@ -73,6 +78,14 @@ export const courseService = {
 
     if (filters?.search) {
       query = query.ilike('title', `%${filters.search}%`)
+    }
+
+    if (filters?.instituteId) {
+      query = query.eq('instid', filters.instituteId)
+    }
+
+    if (filters?.approvalStatus) {
+      query = query.eq('approval_status', filters.approvalStatus)
     }
 
     if (filters?.limit) {

@@ -5,6 +5,7 @@ import Layout from '@/components/layout/Layout'
 import HomePage from '@/pages/HomePage'
 import CourseCatalog from '@/pages/CourseCatalog'
 import CourseDetail from '@/pages/CourseDetail'
+import InstituteDetail from '@/pages/InstituteDetail'
 import LearningInterface from '@/pages/LearningInterface'
 import SignIn from '@/pages/SignIn'
 import SignUpSeafarer from '@/pages/SignUpSeafarer'
@@ -25,6 +26,7 @@ function App() {
             <Route index element={<HomePage />} />
             <Route path="courses" element={<CourseCatalog />} />
             <Route path="course/:courseId" element={<CourseDetail />} />
+            <Route path="institute/:instituteId" element={<InstituteDetail />} />
           </Route>
 
           <Route path="/sign-in" element={<SignIn />} />

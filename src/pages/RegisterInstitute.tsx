@@ -61,12 +61,48 @@ export default function RegisterInstitute() {
       navigate('/institutes')
       return
     }
-    loadMasterCourses()
+
+    const loadCourses = async () => {
+      try {
+        setLoadingCourses(true)
+        setCoursesError('')
+
+        const { data, error } = await supabase
+          .from('master_courses')
+          .select('master_course_id, course_name, course_code, category, description')
+          .eq('is_active', true)
+          .order('category', { ascending: true })
+          .order('course_name', { ascending: true })
+
+        if (error) {
+          console.error('Error loading courses:', error)
+          setCoursesError('Failed to load courses: ' + error.message)
+          setMasterCourses([])
+        } else if (!data || data.length === 0) {
+          setCoursesError('No active courses found')
+          setMasterCourses([])
+        } else {
+          console.log('Loaded courses:', data.length)
+          setMasterCourses(data)
+          setCoursesError('')
+        }
+      } catch (err: any) {
+        console.error('Exception loading courses:', err)
+        setCoursesError('Error: ' + (err.message || 'Unknown error'))
+        setMasterCourses([])
+      } finally {
+        setLoadingCourses(false)
+      }
+    }
+
+    loadCourses()
   }, [user, navigate])
 
   const loadMasterCourses = async () => {
     try {
+      setLoadingCourses(true)
       setCoursesError('')
+
       const { data, error } = await supabase
         .from('master_courses')
         .select('master_course_id, course_name, course_code, category, description')
@@ -75,18 +111,21 @@ export default function RegisterInstitute() {
         .order('course_name', { ascending: true })
 
       if (error) {
-        console.error('Supabase error:', error)
-        throw error
-      }
-
-      if (data && data.length > 0) {
-        setMasterCourses(data)
+        console.error('Error loading courses:', error)
+        setCoursesError('Failed to load courses: ' + error.message)
+        setMasterCourses([])
+      } else if (!data || data.length === 0) {
+        setCoursesError('No active courses found')
+        setMasterCourses([])
       } else {
-        setCoursesError('No active courses available')
+        console.log('Loaded courses:', data.length)
+        setMasterCourses(data)
+        setCoursesError('')
       }
     } catch (err: any) {
-      console.error('Failed to load master courses:', err)
-      setCoursesError(err.message || 'Failed to load courses. Please refresh the page.')
+      console.error('Exception loading courses:', err)
+      setCoursesError('Error: ' + (err.message || 'Unknown error'))
+      setMasterCourses([])
     } finally {
       setLoadingCourses(false)
     }
@@ -555,73 +594,106 @@ export default function RegisterInstitute() {
                     Select courses your institute wants to offer. Admin will review and approve.
                   </p>
 
+                  {/* Debug Info */}
+                  <div className="text-xs text-muted-foreground border-l-2 border-blue-300 pl-2 py-1">
+                    Debug: Loading={loadingCourses ? 'Yes' : 'No'} |
+                    Courses={masterCourses.length} |
+                    Error={coursesError ? 'Yes' : 'No'} |
+                    Categories={Object.keys(groupedCourses).length}
+                  </div>
+
                   {loadingCourses ? (
-                    <div className="py-8 text-center">
-                      <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto"></div>
-                      <p className="text-sm text-muted-foreground mt-2">Loading courses...</p>
+                    <div className="py-8 text-center border-2 border-dashed rounded-lg">
+                      <div className="animate-spin h-12 w-12 border-4 border-primary border-t-transparent rounded-full mx-auto"></div>
+                      <p className="text-sm text-muted-foreground mt-4">Loading courses from database...</p>
+                      <p className="text-xs text-muted-foreground mt-2">Please wait, this should only take a moment</p>
                     </div>
                   ) : coursesError ? (
                     <Alert variant="destructive">
-                      <AlertDescription>
-                        {coursesError}
+                      <AlertDescription className="flex items-center justify-between">
+                        <span>{coursesError}</span>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={loadMasterCourses}
                           className="ml-2"
                         >
-                          Retry
+                          Retry Loading
                         </Button>
                       </AlertDescription>
                     </Alert>
+                  ) : masterCourses.length === 0 ? (
+                    <Alert>
+                      <AlertDescription>
+                        No courses found in the database. Please contact support.
+                      </AlertDescription>
+                    </Alert>
                   ) : (
-                    <div className="border rounded-lg p-4 max-h-96 overflow-y-auto space-y-4">
+                    <div className="border-2 border-primary/20 rounded-lg p-4 max-h-96 overflow-y-auto space-y-4 bg-muted/5">
                       {Object.keys(groupedCourses).length === 0 ? (
-                        <p className="text-sm text-muted-foreground text-center py-4">
-                          No courses available
-                        </p>
+                        <div className="text-center py-8">
+                          <p className="text-sm text-muted-foreground">
+                            No courses could be grouped. Found {masterCourses.length} courses total.
+                          </p>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={loadMasterCourses}
+                            className="mt-2"
+                          >
+                            Reload Courses
+                          </Button>
+                        </div>
                       ) : (
-                        Object.entries(groupedCourses).map(([category, courses]) => (
-                          <div key={category} className="space-y-3">
-                            <h4 className="font-medium text-sm text-primary border-b pb-2">
-                              {category}
-                            </h4>
-                            <div className="space-y-2">
-                              {courses.map((course) => (
-                                <div
-                                  key={course.master_course_id}
-                                  className="flex items-start gap-3 p-2 rounded hover:bg-muted/50"
-                                >
-                                  <Checkbox
-                                    id={course.master_course_id}
-                                    checked={selectedCourses.includes(course.master_course_id)}
-                                    onCheckedChange={() => handleCourseToggle(course.master_course_id)}
-                                  />
-                                  <div className="flex-1">
-                                    <Label
-                                      htmlFor={course.master_course_id}
-                                      className="cursor-pointer font-medium text-sm"
-                                    >
-                                      {course.course_name}
-                                    </Label>
-                                    <p className="text-xs text-muted-foreground">
-                                      {course.course_code}
-                                      {course.description && ` • ${course.description}`}
-                                    </p>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
+                        <>
+                          <div className="text-xs text-muted-foreground mb-2">
+                            Showing {masterCourses.length} courses in {Object.keys(groupedCourses).length} categories
                           </div>
-                        ))
+                          {Object.entries(groupedCourses).map(([category, courses]) => (
+                            <div key={category} className="space-y-3">
+                              <h4 className="font-semibold text-sm text-primary border-b-2 border-primary/30 pb-2 uppercase tracking-wide">
+                                {category} ({courses.length})
+                              </h4>
+                              <div className="space-y-2">
+                                {courses.map((course) => (
+                                  <div
+                                    key={course.master_course_id}
+                                    className="flex items-start gap-3 p-3 rounded-md hover:bg-primary/5 border border-transparent hover:border-primary/20 transition-all"
+                                  >
+                                    <Checkbox
+                                      id={course.master_course_id}
+                                      checked={selectedCourses.includes(course.master_course_id)}
+                                      onCheckedChange={() => handleCourseToggle(course.master_course_id)}
+                                      className="mt-1"
+                                    />
+                                    <div className="flex-1">
+                                      <Label
+                                        htmlFor={course.master_course_id}
+                                        className="cursor-pointer font-medium text-sm leading-tight"
+                                      >
+                                        {course.course_name}
+                                      </Label>
+                                      <p className="text-xs text-muted-foreground mt-1">
+                                        <span className="font-mono bg-muted px-1.5 py-0.5 rounded">{course.course_code}</span>
+                                        {course.description && <span className="ml-2">• {course.description}</span>}
+                                      </p>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </>
                       )}
                     </div>
                   )}
 
                   {selectedCourses.length > 0 && (
-                    <p className="text-sm font-medium text-primary">
-                      ✓ Selected {selectedCourses.length} {selectedCourses.length === 1 ? 'course' : 'courses'}
-                    </p>
+                    <div className="bg-primary/10 border-2 border-primary/30 rounded-lg p-3">
+                      <p className="text-sm font-semibold text-primary">
+                        ✓ Selected {selectedCourses.length} {selectedCourses.length === 1 ? 'course' : 'courses'}
+                      </p>
+                    </div>
                   )}
                 </div>
 

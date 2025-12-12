@@ -30,6 +30,7 @@ export default function AdminDashboard() {
   const [globalCommission, setGlobalCommission] = useState<string>('')
   const [courseCommissions, setCourseCommissions] = useState<Record<string, string>>({})
   const [loadingCourses, setLoadingCourses] = useState(false)
+  const [documentUrls, setDocumentUrls] = useState<Record<string, string>>({})
 
   useEffect(() => {
     loadDashboardData()
@@ -120,6 +121,28 @@ export default function AdminDashboard() {
     } finally {
       setLoadingCourses(false)
     }
+  }
+
+  const loadDocumentSignedUrls = async (documents: any[]) => {
+    const urls: Record<string, string> = {}
+
+    for (const doc of documents) {
+      try {
+        const { data, error } = await supabase.storage
+          .from('institute-documents')
+          .createSignedUrl(doc.url, 3600)
+
+        if (error) {
+          console.error('Error creating signed URL:', error)
+        } else if (data) {
+          urls[doc.url] = data.signedUrl
+        }
+      } catch (error) {
+        console.error('Error creating signed URL:', error)
+      }
+    }
+
+    setDocumentUrls(urls)
   }
 
   const handleSetGlobalCommission = async () => {
@@ -226,6 +249,7 @@ export default function AdminDashboard() {
       setSelectedCourses([])
       setGlobalCommission('')
       setCourseCommissions({})
+      setDocumentUrls({})
       loadDashboardData()
     } catch (error: any) {
       toast({
@@ -496,6 +520,9 @@ export default function AdminDashboard() {
                                   setSelectedInstitute(institute)
                                   setShowVerificationDialog(true)
                                   await loadInstituteCoursesAndCommission(institute.instid)
+                                  if (institute.documents && institute.documents.length > 0) {
+                                    await loadDocumentSignedUrls(institute.documents)
+                                  }
                                 }}
                                 className="bg-green-600 hover:bg-green-700"
                               >
@@ -851,7 +878,16 @@ export default function AdminDashboard() {
           </TabsContent>
         </Tabs>
 
-        <Dialog open={showVerificationDialog} onOpenChange={setShowVerificationDialog}>
+        <Dialog open={showVerificationDialog} onOpenChange={(open) => {
+          setShowVerificationDialog(open)
+          if (!open) {
+            setSelectedInstitute(null)
+            setSelectedCourses([])
+            setGlobalCommission('')
+            setCourseCommissions({})
+            setDocumentUrls({})
+          }
+        }}>
           <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Institute Verification Review</DialogTitle>
@@ -953,9 +989,7 @@ export default function AdminDashboard() {
                         <h4 className="font-semibold mb-3">Submitted License Documents</h4>
                         <div className="space-y-2">
                           {selectedInstitute.documents.map((doc: any, index: number) => {
-                            const { data: { publicUrl } } = supabase.storage
-                              .from('institute-documents')
-                              .getPublicUrl(doc.url)
+                            const signedUrl = documentUrls[doc.url]
 
                             return (
                               <div key={index} className="flex items-center justify-between p-3 bg-background rounded border">
@@ -971,9 +1005,10 @@ export default function AdminDashboard() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => window.open(publicUrl, '_blank')}
+                                  onClick={() => signedUrl && window.open(signedUrl, '_blank')}
+                                  disabled={!signedUrl}
                                 >
-                                  View Document
+                                  {signedUrl ? 'View Document' : 'Loading...'}
                                 </Button>
                               </div>
                             )

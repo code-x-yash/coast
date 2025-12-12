@@ -16,8 +16,7 @@ export default function HomePage() {
   }, [])
 
   const loadFeaturedCourses = async () => {
-      try {
-          debugger;
+    try {
       const courses = await courseService.getCourses({ limit: 3 })
       setFeaturedCourses(courses)
     } catch (error) {

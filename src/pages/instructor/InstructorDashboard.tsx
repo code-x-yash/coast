@@ -61,7 +61,7 @@ export default function InstructorDashboard() {
     try {
       setLoading(true)
 
-      const instituteData = await maritimeApi.getInstituteByUserId(user.userid)
+      const instituteData = await maritimeApi.getInstituteByUserId(user.id)
       setInstitute(instituteData)
 
       if (instituteData) {

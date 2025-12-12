@@ -89,6 +89,33 @@ export const courseModes = ['offline', 'online', 'hybrid'] as const
 
 export const maritimeApi = {
   async getInstituteByUserId(userId: string): Promise<Institute | null> {
+    const instituteData = localStorage.getItem('institute_data')
+    const userData = localStorage.getItem('maritime_user')
+
+    if (instituteData && userData) {
+      const institute = JSON.parse(instituteData)
+      const user = JSON.parse(userData)
+
+      if (user.id === userId && user.role === 'institute') {
+        return {
+          instid: userId,
+          userid: userId,
+          name: institute.instituteName || 'My Institute',
+          accreditation_no: 'DGS-2024-001',
+          valid_from: '2024-01-01',
+          valid_to: '2026-12-31',
+          contact_email: user.email,
+          contact_phone: user.phone,
+          address: 'Institute Address',
+          city: 'Mumbai',
+          state: 'Maharashtra',
+          verified_status: 'verified',
+          documents: [],
+          created_at: new Date().toISOString()
+        }
+      }
+    }
+
     const { data, error } = await supabase
       .from('institutes')
       .select('*')
@@ -119,6 +146,12 @@ export const maritimeApi = {
   },
 
   async listCourses(filters?: { instid?: string }): Promise<Course[]> {
+    const mockCourses = localStorage.getItem('mock_courses')
+    if (mockCourses && filters?.instid) {
+      const courses = JSON.parse(mockCourses)
+      return courses.filter((c: Course) => c.instid === filters.instid)
+    }
+
     let query = supabase
       .from('courses')
       .select('*')
@@ -145,6 +178,26 @@ export const maritimeApi = {
     validity_months?: number
     accreditation_ref?: string
   }): Promise<Course> {
+    const userData = localStorage.getItem('maritime_user')
+    if (userData) {
+      const user = JSON.parse(userData)
+      if (user.role === 'institute') {
+        const newCourse: Course = {
+          courseid: Math.random().toString(36).substring(7),
+          ...courseData,
+          status: 'active',
+          created_at: new Date().toISOString()
+        }
+
+        const mockCourses = localStorage.getItem('mock_courses')
+        const courses = mockCourses ? JSON.parse(mockCourses) : []
+        courses.push(newCourse)
+        localStorage.setItem('mock_courses', JSON.stringify(courses))
+
+        return newCourse
+      }
+    }
+
     const { data, error } = await supabase
       .from('courses')
       .insert({
@@ -159,6 +212,11 @@ export const maritimeApi = {
   },
 
   async listBatches(): Promise<Batch[]> {
+    const mockBatches = localStorage.getItem('mock_batches')
+    if (mockBatches) {
+      return JSON.parse(mockBatches)
+    }
+
     const { data, error } = await supabase
       .from('batches')
       .select('*')
@@ -177,6 +235,27 @@ export const maritimeApi = {
     trainer?: string
     location?: string
   }): Promise<Batch> {
+    const userData = localStorage.getItem('maritime_user')
+    if (userData) {
+      const user = JSON.parse(userData)
+      if (user.role === 'institute') {
+        const newBatch: Batch = {
+          batchid: Math.random().toString(36).substring(7),
+          ...batchData,
+          seats_booked: 0,
+          batch_status: 'upcoming',
+          created_at: new Date().toISOString()
+        }
+
+        const mockBatches = localStorage.getItem('mock_batches')
+        const batches = mockBatches ? JSON.parse(mockBatches) : []
+        batches.push(newBatch)
+        localStorage.setItem('mock_batches', JSON.stringify(batches))
+
+        return newBatch
+      }
+    }
+
     const { data, error } = await supabase
       .from('batches')
       .insert({
@@ -192,6 +271,11 @@ export const maritimeApi = {
   },
 
   async listBookings(): Promise<Booking[]> {
+    const mockBookings = localStorage.getItem('mock_bookings')
+    if (mockBookings) {
+      return JSON.parse(mockBookings)
+    }
+
     const { data, error } = await supabase
       .from('bookings')
       .select('*')
@@ -202,6 +286,11 @@ export const maritimeApi = {
   },
 
   async listCertificates(): Promise<Certificate[]> {
+    const mockCertificates = localStorage.getItem('mock_certificates')
+    if (mockCertificates) {
+      return JSON.parse(mockCertificates)
+    }
+
     const { data, error } = await supabase
       .from('certificates')
       .select('*')

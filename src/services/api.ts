@@ -17,6 +17,18 @@ export interface Institute {
   verified_status: 'pending' | 'verified' | 'rejected'
   documents?: any[]
   created_at?: string
+  logo_url?: string
+  banner_url?: string
+  customer_care_email?: string
+  customer_care_phone?: string
+  admin_contact_person?: string
+  house_number?: string
+  street_name?: string
+  landmark?: string
+  country?: string
+  postcode?: string
+  license_number?: string
+  issuing_authority?: string
 }
 
 export interface Course {
@@ -34,6 +46,17 @@ export interface Course {
   master_course_id?: string
   application_id?: string
   created_at?: string
+  course_code?: string
+  instructor_name?: string
+  thumbnail_url?: string
+  category?: string
+  target_audience?: string
+  entry_requirements?: string
+  course_overview?: string
+  additional_notes?: string
+  currency?: 'INR' | 'USD' | 'EUR' | 'AED'
+  approval_date?: string
+  approved_by?: string
 }
 
 export interface Batch {
@@ -48,6 +71,7 @@ export interface Batch {
   location?: string
   batch_status: 'upcoming' | 'ongoing' | 'completed' | 'cancelled'
   created_at?: string
+  instructor_name?: string
 }
 
 export interface Booking {
@@ -60,6 +84,7 @@ export interface Booking {
   attendance_status: 'not_started' | 'present' | 'absent' | 'completed'
   booking_date: string
   created_at?: string
+  currency?: 'INR' | 'USD' | 'EUR' | 'AED'
 }
 
 export interface Certificate {
@@ -84,6 +109,15 @@ export interface Seafarer {
   nationality?: string
   profile_image?: string
   created_at?: string
+  username?: string
+  house_number?: string
+  street_name?: string
+  city?: string
+  country?: string
+  postcode?: string
+  position?: string
+  education_details?: string
+  company_name?: string
 }
 
 export interface User {
@@ -93,6 +127,10 @@ export interface User {
   phone?: string
   role: 'admin' | 'institute' | 'student'
   created_at?: string
+  email_verified?: boolean
+  phone_verified?: boolean
+  last_login?: string
+  account_status?: 'active' | 'suspended' | 'deleted'
 }
 
 export interface CourseWithDetails extends Course {
@@ -213,12 +251,21 @@ export const api = {
     validity_months?: number
     accreditation_ref?: string
     master_course_id?: string
+    instructor_name?: string
+    thumbnail_url?: string
+    category?: string
+    target_audience?: string
+    entry_requirements?: string
+    course_overview?: string
+    additional_notes?: string
+    currency?: 'INR' | 'USD' | 'EUR' | 'AED'
   }): Promise<Course> {
     const { data, error } = await supabase
       .from('courses')
       .insert({
         ...courseData,
-        status: 'active'
+        status: 'active',
+        currency: courseData.currency || 'INR'
       })
       .select()
       .single()
@@ -251,6 +298,7 @@ export const api = {
     seats_total: number
     trainer?: string
     location?: string
+    instructor_name?: string
   }): Promise<Batch> {
     const { data, error } = await supabase
       .from('batches')
@@ -290,6 +338,7 @@ export const api = {
     studid: string
     batchid: string
     amount: number
+    currency?: 'INR' | 'USD' | 'EUR' | 'AED'
   }): Promise<Booking> {
     const { data: batch } = await supabase
       .from('batches')
@@ -321,7 +370,8 @@ export const api = {
         confirmation_number: confirmationNumber,
         payment_status: 'pending',
         attendance_status: 'not_started',
-        booking_date: new Date().toISOString()
+        booking_date: new Date().toISOString(),
+        currency: bookingData.currency || 'INR'
       })
       .select()
       .single()

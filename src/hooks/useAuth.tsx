@@ -195,13 +195,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { error: studentError } = await supabase
       .from('students')
       .insert({
-        studid: `STUD-${Date.now()}`,
         userid: authData.user.id,
         dgshipping_id: formData.dgshipping_id,
         rank: formData.rank,
         coc_number: formData.coc_number,
         date_of_birth: formData.date_of_birth,
-        nationality: formData.nationality
+        nationality: formData.nationality || 'Indian'
       })
 
     if (studentError) throw studentError
@@ -261,7 +260,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { error: instituteError } = await supabase
       .from('institutes')
       .insert({
-        instid: `INST-${Date.now()}`,
         userid: authData.user.id,
         name: formData.instituteName,
         accreditation_no: formData.accreditation_no,

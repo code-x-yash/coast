@@ -22,7 +22,7 @@ interface MasterCourse {
 
 export default function RegisterInstitute() {
   const navigate = useNavigate()
-  const { registerInstitute, user } = useAuth()
+  const { registerInstitute } = useAuth()
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -57,12 +57,8 @@ export default function RegisterInstitute() {
   const [coursesError, setCoursesError] = useState('')
 
   useEffect(() => {
-    if (user) {
-      navigate('/institutes')
-      return
-    }
     loadMasterCourses()
-  }, [user, navigate])
+  }, [])
 
   const loadMasterCourses = async () => {
     try {
@@ -90,10 +86,6 @@ export default function RegisterInstitute() {
     } finally {
       setLoadingCourses(false)
     }
-  }
-
-  if (user) {
-    return null
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -196,9 +188,9 @@ export default function RegisterInstitute() {
       })
       toast({
         title: 'Registration Successful!',
-        description: 'Your institute has been registered. Awaiting admin verification.',
+        description: 'Your institute has been registered successfully.',
       })
-      navigate('/institutes')
+      navigate('/')
     } catch (err: any) {
       setError(err.message || 'Failed to register institute')
     } finally {

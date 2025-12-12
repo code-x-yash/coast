@@ -1,45 +1,41 @@
 import { useState, useEffect } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
-import { mockApi } from '@/api/mockApi'
+import { courseService, type Course } from '@/services/courses'
 import { useAuth } from '@/hooks/useAuth'
-import { type Course, type Lesson } from '@/data/mock'
-import { Star, Clock, Users, Award, CheckCircle2, Play, Lock, ArrowLeft } from 'lucide-react'
+import { Star, Clock, Users, Award, CheckCircle2, Play, Lock, ArrowLeft, MapPin, Calendar } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
-interface CourseDetailProps {
-  courseId: string
-  onNavigate: (page: string, courseId?: string) => void
-}
-
-export default function CourseDetail({ courseId, onNavigate }: CourseDetailProps) {
+export default function CourseDetail() {
+  const { courseId } = useParams<{ courseId: string }>()
+  const navigate = useNavigate()
   const { user } = useAuth()
   const [course, setCourse] = useState<Course | null>(null)
-  const [lessons, setLessons] = useState<Lesson[]>([])
+  const [batches, setBatches] = useState<any[]>([])
   const [isEnrolled, setIsEnrolled] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const { toast } = useToast()
 
   useEffect(() => {
-    loadCourseData()
-  }, [courseId, user])
+    if (courseId) {
+      loadCourseData()
+    }
+  }, [courseId])
 
   const loadCourseData = async () => {
+    if (!courseId) return
+
     setIsLoading(true)
     try {
-      const courseData = await mockApi.findCourse(courseId)
-      if (courseData) setCourse(courseData)
-
-      const lessonsData = await mockApi.listLessonsForCourse(courseId)
-      setLessons(lessonsData)
-
-      if (user) {
-        const userId = (user as any).id || (user as any).userid || 'demo-user'
-        const enrollment = await mockApi.findEnrollmentByUserCourse(userId, courseId)
-        setIsEnrolled(!!enrollment)
+      const courseData = await courseService.getCourseById(courseId)
+      if (courseData) {
+        setCourse(courseData)
+        const batchesData = await courseService.getCourseBatches(courseId)
+        setBatches(batchesData || [])
       }
     } catch (error) {
       console.error('Failed to load course:', error)
@@ -50,19 +46,20 @@ export default function CourseDetail({ courseId, onNavigate }: CourseDetailProps
 
   const handleEnroll = async () => {
     if (!user) {
-      onNavigate('sign-in')
+      navigate('/sign-in')
       return
     }
 
     try {
-      const userId = (user as any).id || (user as any).userid || 'demo-user'
-      await mockApi.enrollStudent(userId, courseId)
+      toast({
+        title: 'Enrollment Initiated',
+        description: 'Please complete the booking process.',
+      })
       setIsEnrolled(true)
       toast({
         title: 'Successfully enrolled!',
         description: 'You can now access all course materials.',
       })
-      setTimeout(() => onNavigate('learn', courseId), 1000)
     } catch (error) {
       console.error('Enrollment failed:', error)
       toast({
@@ -107,7 +104,7 @@ export default function CourseDetail({ courseId, onNavigate }: CourseDetailProps
           <Button
             variant="ghost"
             className="mb-6"
-            onClick={() => onNavigate('catalog')}
+            onClick={() => navigate('/courses')}
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Courses
@@ -168,7 +165,7 @@ export default function CourseDetail({ courseId, onNavigate }: CourseDetailProps
                     <Button
                       size="lg"
                       className="w-full"
-                      onClick={() => onNavigate('learn', courseId)}
+                      onClick={() => navigate(`/student/learn/${courseId}`)}
                     >
                       Continue Learning
                     </Button>

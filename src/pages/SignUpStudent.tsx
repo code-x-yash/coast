@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -7,13 +8,15 @@ import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from '@/hooks/use-toast'
-import { maritimeRanks } from '@/data/maritimeMockData'
+import { Anchor } from 'lucide-react'
 
-interface SignUpStudentProps {
-  onNavigate: (page: string) => void
-}
+const maritimeRanks = [
+  'Deck Cadet', 'Third Officer', 'Second Officer', 'Chief Officer', 'Captain',
+  'Engine Cadet', 'Fourth Engineer', 'Third Engineer', 'Second Engineer', 'Chief Engineer'
+]
 
-export default function SignUpStudent({ onNavigate }: SignUpStudentProps) {
+export default function SignUpStudent() {
+  const navigate = useNavigate()
   const { signUpStudent, user } = useAuth()
   const [formData, setFormData] = useState({
     name: '',
@@ -31,7 +34,7 @@ export default function SignUpStudent({ onNavigate }: SignUpStudentProps) {
   const [loading, setLoading] = useState(false)
 
   if (user) {
-    onNavigate('student-dashboard')
+    navigate('/student')
     return null
   }
 
@@ -71,7 +74,7 @@ export default function SignUpStudent({ onNavigate }: SignUpStudentProps) {
         title: 'Welcome to Maritime Training Platform!',
         description: 'Your seafarer account has been created successfully.',
       })
-      onNavigate('student-dashboard')
+      navigate('/student')
     } catch (err: any) {
       setError(err.message || 'Failed to create account')
     } finally {
@@ -262,7 +265,7 @@ export default function SignUpStudent({ onNavigate }: SignUpStudentProps) {
                     Already have an account?{' '}
                     <button
                       type="button"
-                      onClick={() => onNavigate('sign-in')}
+                      onClick={() => navigate('/sign-in')}
                       className="text-primary hover:underline font-medium"
                     >
                       Sign in
@@ -272,7 +275,7 @@ export default function SignUpStudent({ onNavigate }: SignUpStudentProps) {
                     Representing a training institute?{' '}
                     <button
                       type="button"
-                      onClick={() => onNavigate('register-institute')}
+                      onClick={() => navigate('/register-institute')}
                       className="text-primary hover:underline font-medium"
                     >
                       Register your institute

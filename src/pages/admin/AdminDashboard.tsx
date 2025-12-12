@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { maritimeApi, Institute, Course, Booking, Certificate, User, ReactivationRequest } from '@/api/maritimeMockApi'
+import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -8,12 +8,10 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Building2, BookOpen, Users, TrendingUp, Award, CheckCircle, XCircle, Clock, AlertCircle, DollarSign, FileCheck } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
+import { supabase } from '@/lib/supabase'
 
-interface AdminDashboardProps {
-  onNavigate: (page: string) => void
-}
-
-export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
+export default function AdminDashboard() {
+  const navigate = useNavigate()
   const [institutes, setInstitutes] = useState<Institute[]>([])
   const [courses, setCourses] = useState<Course[]>([])
   const [bookings, setBookings] = useState<Booking[]>([])

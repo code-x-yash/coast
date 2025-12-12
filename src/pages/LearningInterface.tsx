@@ -1,23 +1,17 @@
 import { useState, useEffect } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Separator } from '@/components/ui/separator'
-import { mockApi } from '@/api/mockApi'
 import { useAuth } from '@/hooks/useAuth'
-import { type Course, type Lesson, type Enrollment } from '@/data/mock'
-import { CheckCircle2, Circle, ChevronLeft, ChevronRight, ArrowLeft, Play } from 'lucide-react'
+import { CheckCircle2, Circle, ChevronLeft, ChevronRight, ArrowLeft, Play, BookOpen } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
-interface LearningInterfaceProps {
-  courseId: string
-  onNavigate: (page: string, courseId?: string) => void
-}
-
-export default function LearningInterface({ courseId, onNavigate }: LearningInterfaceProps) {
+export default function LearningInterface() {
+  const { courseId } = useParams<{ courseId: string }>()
+  const navigate = useNavigate()
   const { user } = useAuth()
-  const [course, setCourse] = useState<Course | null>(null)
-  const [lessons, setLessons] = useState<Lesson[]>([])
   const [currentLessonIndex, setCurrentLessonIndex] = useState(0)
   const [completedLessons, setCompletedLessons] = useState<string[]>([])
   const [enrollment, setEnrollment] = useState<Enrollment | null>(null)

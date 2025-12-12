@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
-import { maritimeApi, Course, Batch, Booking, Certificate, Student, Institute } from '@/api/maritimeMockApi'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -9,18 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Calendar, MapPin, Clock, Users, Download, AlertCircle, CheckCircle, BookOpen, Award, Filter } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
-import { courseTypes, courseModes } from '@/data/maritimeMockData'
 
-interface StudentDashboardProps {
-  onNavigate: (page: string) => void
-}
-
-interface CourseWithDetails extends Course {
-  institute?: Institute
-  batches?: Batch[]
-}
-
-export default function StudentDashboard({ onNavigate }: StudentDashboardProps) {
+export default function StudentDashboard() {
+  const navigate = useNavigate()
   const { user } = useAuth()
   const [student, setStudent] = useState<Student | null>(null)
   const [courses, setCourses] = useState<CourseWithDetails[]>([])

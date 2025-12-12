@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -7,12 +8,10 @@ import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from '@/hooks/use-toast'
+import { Building2 } from 'lucide-react'
 
-interface RegisterInstituteProps {
-  onNavigate: (page: string) => void
-}
-
-export default function RegisterInstitute({ onNavigate }: RegisterInstituteProps) {
+export default function RegisterInstitute() {
+  const navigate = useNavigate()
   const { registerInstitute, user } = useAuth()
   const [formData, setFormData] = useState({
     name: '',
@@ -32,7 +31,7 @@ export default function RegisterInstitute({ onNavigate }: RegisterInstituteProps
   const [loading, setLoading] = useState(false)
 
   if (user) {
-    onNavigate('dashboard')
+    navigate('/institutes')
     return null
   }
 
@@ -75,7 +74,7 @@ export default function RegisterInstitute({ onNavigate }: RegisterInstituteProps
         title: 'Registration Successful!',
         description: 'Your institute has been registered. Awaiting admin verification.',
       })
-      onNavigate('dashboard')
+      navigate('/institutes')
     } catch (err: any) {
       setError(err.message || 'Failed to register institute')
     } finally {
@@ -305,7 +304,7 @@ export default function RegisterInstitute({ onNavigate }: RegisterInstituteProps
                     Already have an account?{' '}
                     <button
                       type="button"
-                      onClick={() => onNavigate('sign-in')}
+                      onClick={() => navigate('/sign-in')}
                       className="text-primary hover:underline font-medium"
                     >
                       Sign in
@@ -315,7 +314,7 @@ export default function RegisterInstitute({ onNavigate }: RegisterInstituteProps
                     Are you a seafarer?{' '}
                     <button
                       type="button"
-                      onClick={() => onNavigate('sign-up-student')}
+                      onClick={() => navigate('/sign-up')}
                       className="text-primary hover:underline font-medium"
                     >
                       Register as seafarer

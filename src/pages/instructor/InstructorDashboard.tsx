@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
-import { maritimeApi, Course, Batch, Institute, Booking, Certificate, ReactivationRequest } from '@/api/maritimeMockApi'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -13,14 +13,10 @@ import { Textarea } from '@/components/ui/textarea'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Building2, BookOpen, Calendar, Users, Award, TrendingUp, Plus, Upload, CheckCircle, AlertCircle, AlertTriangle, Clock } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
-import { courseTypes, courseModes } from '@/data/maritimeMockData'
 import { ReactivationRequestForm } from '@/components/ReactivationRequestForm'
 
-interface InstructorDashboardProps {
-  onNavigate: (page: string) => void
-}
-
-export default function InstructorDashboard({ onNavigate }: InstructorDashboardProps) {
+export default function InstructorDashboard() {
+  const navigate = useNavigate()
   const { user } = useAuth()
   const [institute, setInstitute] = useState<Institute | null>(null)
   const [courses, setCourses] = useState<Course[]>([])

@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { mockCourses } from '@/data/mock'
-import { Star, Clock, Users, Search, SlidersHorizontal } from 'lucide-react'
+import { courseService, type Course } from '@/services/courses'
+import { Star, Clock, Users, Search, SlidersHorizontal, Ship } from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -13,26 +14,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 
-
-interface Course {
-  id: string
-  title: string
-  description: string
-  instructorName: string
-  category: string
-  level: string
-  durationHours: number
-  price: number
-  rating: number
-  totalStudents: number
-  thumbnailUrl: string
-}
-
-interface CourseCatalogProps {
-  onNavigate: (page: string, courseId?: string) => void
-}
-
-export default function CourseCatalog({ onNavigate }: CourseCatalogProps) {
+export default function CourseCatalog() {
+  const navigate = useNavigate()
   const [courses, setCourses] = useState<Course[]>([])
   const [filteredCourses, setFilteredCourses] = useState<Course[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -41,8 +24,8 @@ export default function CourseCatalog({ onNavigate }: CourseCatalogProps) {
   const [selectedLevel, setSelectedLevel] = useState('all')
   const [sortBy, setSortBy] = useState('popular')
 
-  const categories = ['all', 'Navigation', 'Engineering', 'Safety', 'Operations']
-  const levels = ['all', 'Beginner', 'Intermediate', 'Advanced']
+  const categories = ['all', 'STCW', 'Refresher', 'Technical', 'Other']
+  const modes = ['all', 'offline', 'online', 'hybrid']
 
   useEffect(() => {
     loadCourses()
@@ -54,7 +37,8 @@ export default function CourseCatalog({ onNavigate }: CourseCatalogProps) {
 
   const loadCourses = async () => {
     try {
-      setCourses(mockCourses)
+      const data = await courseService.getCourses()
+      setCourses(data)
     } catch (error) {
       console.error('Failed to load courses:', error)
     } finally {
@@ -65,39 +49,35 @@ export default function CourseCatalog({ onNavigate }: CourseCatalogProps) {
   const filterAndSortCourses = () => {
     let filtered = [...courses]
 
-    // Search filter
     if (searchQuery.trim()) {
       filtered = filtered.filter(
         (course) =>
           course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          course.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          course.category.toLowerCase().includes(searchQuery.toLowerCase())
+          (course.description && course.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
+          course.type.toLowerCase().includes(searchQuery.toLowerCase())
       )
     }
 
-    // Category filter
     if (selectedCategory !== 'all') {
-      filtered = filtered.filter((course) => course.category === selectedCategory)
+      filtered = filtered.filter((course) => course.type === selectedCategory)
     }
 
-    // Level filter
     if (selectedLevel !== 'all') {
-      filtered = filtered.filter((course) => course.level === selectedLevel)
+      filtered = filtered.filter((course) => course.mode === selectedLevel)
     }
 
-    // Sort
     switch (sortBy) {
       case 'popular':
-        filtered.sort((a, b) => b.totalStudents - a.totalStudents)
-        break
-      case 'rating':
-        filtered.sort((a, b) => b.rating - a.rating)
+        filtered.sort((a, b) => a.title.localeCompare(b.title))
         break
       case 'price-low':
-        filtered.sort((a, b) => a.price - b.price)
+        filtered.sort((a, b) => Number(a.fees) - Number(b.fees))
         break
       case 'price-high':
-        filtered.sort((a, b) => b.price - a.price)
+        filtered.sort((a, b) => Number(b.fees) - Number(a.fees))
+        break
+      case 'duration':
+        filtered.sort((a, b) => a.duration.localeCompare(b.duration))
         break
     }
 
@@ -146,15 +126,15 @@ export default function CourseCatalog({ onNavigate }: CourseCatalogProps) {
               </SelectContent>
             </Select>
 
-            {/* Level Filter */}
+            {/* Mode Filter */}
             <Select value={selectedLevel} onValueChange={setSelectedLevel}>
               <SelectTrigger>
-                <SelectValue placeholder="Level" />
+                <SelectValue placeholder="Mode" />
               </SelectTrigger>
               <SelectContent>
-                {levels.map((level) => (
-                  <SelectItem key={level} value={level}>
-                    {level === 'all' ? 'All Levels' : level}
+                {modes.map((mode) => (
+                  <SelectItem key={mode} value={mode}>
+                    {mode === 'all' ? 'All Modes' : mode.charAt(0).toUpperCase() + mode.slice(1)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -166,10 +146,10 @@ export default function CourseCatalog({ onNavigate }: CourseCatalogProps) {
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="popular">Most Popular</SelectItem>
-                <SelectItem value="rating">Highest Rated</SelectItem>
+                <SelectItem value="popular">Name A-Z</SelectItem>
                 <SelectItem value="price-low">Price: Low to High</SelectItem>
                 <SelectItem value="price-high">Price: High to Low</SelectItem>
+                <SelectItem value="duration">Duration</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -230,50 +210,45 @@ export default function CourseCatalog({ onNavigate }: CourseCatalogProps) {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredCourses.map((course) => (
               <Card
-                key={course.id}
+                key={course.courseid}
                 className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group"
-                onClick={() => onNavigate('course', course.id)}
+                onClick={() => navigate(`/course/${course.courseid}`)}
               >
-                <div className="relative h-48 overflow-hidden">
-                  <img
-                    src={course.thumbnailUrl || 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=800&q=80'}
-                    alt={course.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
+                <div className="relative h-48 overflow-hidden bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center">
+                  <Ship className="h-24 w-24 text-primary/20" />
                   <Badge className="absolute top-4 left-4 bg-white/95 text-foreground backdrop-blur shadow-md font-medium">
-                    {course.category}
+                    {course.type}
                   </Badge>
                 </div>
                 <CardContent className="p-6">
                   <h3 className="text-lg font-semibold mb-2 line-clamp-2 group-hover:text-primary transition-colors">
                     {course.title}
                   </h3>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    {course.instructorName}
-                  </p>
+                  {course.institutes?.name && (
+                    <p className="text-sm text-muted-foreground mb-2">
+                      {course.institutes.name}
+                    </p>
+                  )}
                   <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                    {course.description}
+                    {course.description || 'Professional maritime training course'}
                   </p>
 
                   <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
                     <div className="flex items-center gap-1">
-                      <Star className="h-4 w-4 fill-primary text-primary" />
-                      <span className="font-medium text-foreground">{course.rating}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
                       <Clock className="h-4 w-4" />
-                      <span>{course.durationHours}h</span>
+                      <span>{course.duration}</span>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Users className="h-4 w-4" />
-                      <span>{course.totalStudents.toLocaleString()}</span>
-                    </div>
+                    <Badge variant="secondary" className="text-xs">
+                      {course.mode}
+                    </Badge>
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <Badge variant="secondary">{course.level}</Badge>
+                    <span className="text-xs text-muted-foreground">
+                      {course.validity_months || 60} months validity
+                    </span>
                     <div className="text-xl font-bold text-primary">
-                      ${course.price}
+                      ₹{Number(course.fees).toLocaleString()}
                     </div>
                   </div>
                 </CardContent>

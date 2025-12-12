@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { maritimeApi, Institute } from '@/api/maritimeMockApi'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -9,6 +8,12 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AlertCircle, CheckCircle, RefreshCw } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
+
+interface Institute {
+  instid: string
+  name: string
+  verified_status: string
+}
 
 interface ReactivationRequestFormProps {
   institute: Institute

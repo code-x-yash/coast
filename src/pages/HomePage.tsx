@@ -54,7 +54,7 @@ export default function HomePage() {
           banner_url,
           verified_status
         `)
-        .eq('verified_status', 'approved')
+        .eq('verified_status', 'verified')
         .limit(6)
 
       if (error) throw error
@@ -66,7 +66,7 @@ export default function HomePage() {
               .from('courses')
               .select('*', { count: 'exact', head: true })
               .eq('instid', institute.instid)
-              .eq('approval_status', 'approved')
+              .eq('status', 'active')
 
             return {
               ...institute,

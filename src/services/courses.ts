@@ -54,7 +54,6 @@ export const courseService = {
     search?: string
     limit?: number
     instituteId?: string
-    approvalStatus?: string
   }) {
     let query = supabase
       .from('courses')
@@ -82,10 +81,6 @@ export const courseService = {
 
     if (filters?.instituteId) {
       query = query.eq('instid', filters.instituteId)
-    }
-
-    if (filters?.approvalStatus) {
-      query = query.eq('approval_status', filters.approvalStatus)
     }
 
     if (filters?.limit) {

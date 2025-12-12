@@ -67,8 +67,7 @@ export default function InstituteDetail() {
         setInstitute(instituteData)
 
         const coursesData = await courseService.getCourses({
-          instituteId: instituteId,
-          approvalStatus: 'approved'
+          instituteId: instituteId
         })
         setCourses(coursesData)
       }

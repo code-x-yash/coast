@@ -41,7 +41,6 @@ export default function RegisterInstitute() {
     issuingAuthority: 'DG Shipping',
     customerCareEmail: '',
     customerCarePhone: '',
-    accreditation_no: '',
     valid_from: '',
     valid_to: '',
   })
@@ -186,10 +185,10 @@ export default function RegisterInstitute() {
       return
     }
 
-    if (!formData.valid_from || !formData.valid_to) {
-      setError('Accreditation validity dates are required')
-      return
-    }
+    //if (!formData.valid_from || !formData.valid_to) {
+    //  setError('Accreditation validity dates are required')
+    //  return
+    //}
 
     if (!logoFile) {
       setError('Institute logo is required')
@@ -202,7 +201,7 @@ export default function RegisterInstitute() {
     }
 
     if (licenseFiles.length === 0) {
-      setError('Please upload at least one license/accreditation document')
+      setError('Please upload at least one license document')
       return
     }
 
@@ -662,7 +661,7 @@ export default function RegisterInstitute() {
                 <div className="space-y-4">
                   <h3 className="font-semibold text-lg border-b pb-2">7. License Documentation</h3>
                   <p className="text-sm text-muted-foreground">
-                    Upload your DG Shipping license/accreditation documents. Supported formats: PDF, PNG, JPG, JPEG
+                    Upload your DG Shipping license documents. Supported formats: PDF, PNG, JPG, JPEG
                   </p>
 
                   <div className="space-y-2">
@@ -676,7 +675,7 @@ export default function RegisterInstitute() {
                       required
                     />
                     <p className="text-xs text-muted-foreground">
-                      Upload DG Shipping accreditation certificate, license documents, etc.
+                      Upload DG Shipping certificate, license documents, etc.
                     </p>
                   </div>
 

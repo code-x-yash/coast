@@ -254,7 +254,7 @@ export default function InstructorDashboard() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-3xl font-bold mb-2">{institute.name}</h1>
-              <p className="text-muted-foreground">Accreditation: {institute.accreditation_no}</p>
+              {/*<p className="text-muted-foreground">Accreditation: {institute.accreditation_no}</p>*/}
             </div>
             <Badge variant={accreditationStatus.color as any} className="text-lg px-4 py-2">
               <StatusIcon className="h-4 w-4 mr-2" />

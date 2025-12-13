@@ -34,7 +34,6 @@ interface AuthContextType {
     password: string
     confirmPassword: string
     instituteName: string
-    accreditation_no: string
     valid_from: string
     valid_to: string
     address?: string
@@ -190,7 +189,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     password: string
     confirmPassword: string
     instituteName: string
-    accreditation_no: string
     valid_from: string
     valid_to: string
     address?: string
@@ -238,7 +236,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .insert({
         userid: authData.user.id,
         name: formData.instituteName,
-        accreditation_no: formData.accreditation_no,
         valid_from: formData.valid_from,
         valid_to: formData.valid_to,
         contact_email: formData.email,

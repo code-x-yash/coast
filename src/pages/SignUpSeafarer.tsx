@@ -81,9 +81,9 @@ export default function SignUpSeafarer() {
         await signUpStudent(formData)
       toast({
         title: 'Welcome to Maritime Training Platform!',
-        description: 'Your seafarer account has been created successfully.',
+        description: 'Please check your email for account verification.',
       })
-      navigate('/seafarer')
+      navigate('/sign-in')
     } catch (err: any) {
       setError(err.message || 'Failed to create account')
     } finally {

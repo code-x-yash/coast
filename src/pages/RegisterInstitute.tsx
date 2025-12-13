@@ -228,9 +228,9 @@ export default function RegisterInstitute() {
       })
       toast({
         title: 'Registration Successful!',
-        description: 'Your institute has been registered successfully.',
+        description: 'Please check your email for account verification.',
       })
-      navigate('/')
+      navigate('/sign-in')
     } catch (err: any) {
       setError(err.message || 'Failed to register institute')
     } finally {

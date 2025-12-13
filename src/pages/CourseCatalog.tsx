@@ -25,7 +25,7 @@ export default function CourseCatalog() {
   const [sortBy, setSortBy] = useState('popular')
 
   const categories = ['all', 'STCW', 'Refresher', 'Technical', 'Other']
-  const modes = ['all', 'offline', 'online', 'hybrid']
+  const modes = ['all', 'offline', 'online']
 
   useEffect(() => {
     loadCourses()

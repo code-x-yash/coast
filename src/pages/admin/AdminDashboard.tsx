@@ -49,7 +49,7 @@ export default function AdminDashboard() {
         api.listReactivationRequests()
       ])
 
-      setInstitutes(instituteData)
+        setInstitutes(instituteData)
       setCourses(courseData)
       setBookings(bookingData)
       setCertificates(certData)
@@ -161,15 +161,20 @@ export default function AdminDashboard() {
 
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Not authenticated')
-
-      const { error } = await supabase
-        .from('institute_commissions')
-        .upsert({
-          instid: selectedInstitute.instid,
-          default_commission_percent: commissionValue,
-          set_by: user.id,
-          set_at: new Date().toISOString()
-        })
+        debugger;
+        const { error } = await supabase
+            .from('institute_commissions')
+            .upsert(
+                {
+                    instid: selectedInstitute.instid,
+                    default_commission_percent: commissionValue,
+                    set_by: user.id,
+                    set_at: new Date().toISOString()
+                },
+                {
+                    onConflict: 'instid'
+                }
+            )
 
       if (error) throw error
 
@@ -283,7 +288,8 @@ export default function AdminDashboard() {
 
   const analytics = api.getAnalytics()
   const pending = reactivationRequests?.filter(r => r.status === "pending") ?? [];
-  const pendingInstitutes = institutes.filter(i => i.verified_status === 'pending')
+    const pendingInstitutes = institutes.filter(i => i.verified_status === 'pending')
+    console.log('Pending Institutes:', pendingInstitutes)
   const verifiedInstitutes = institutes.filter(i => i.verified_status === 'verified')
   const totalRevenue = bookings
     .filter(b => b.payment_status === 'completed')
@@ -527,7 +533,7 @@ export default function AdminDashboard() {
                                 className="bg-green-600 hover:bg-green-700"
                               >
                                 <CheckCircle className="h-4 w-4 mr-2" />
-                                Review & Verify
+                                Review & Approve
                               </Button>
                               <Button
                                 variant="destructive"
@@ -1233,7 +1239,7 @@ export default function AdminDashboard() {
                 className="bg-green-600 hover:bg-green-700"
               >
                 <CheckCircle className="h-4 w-4 mr-2" />
-                Verify & Approve
+                Approve
               </Button>
             </DialogFooter>
           </DialogContent>

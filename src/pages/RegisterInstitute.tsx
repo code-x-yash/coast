@@ -217,7 +217,8 @@ export default function RegisterInstitute() {
 
     setLoading(true)
 
-    try {
+      try {
+          debugger;
       await registerInstitute({
         ...formData,
         selectedCourses,

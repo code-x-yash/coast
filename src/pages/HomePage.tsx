@@ -220,106 +220,106 @@ export default function HomePage() {
       </section>
 
       {/* Featured Institutes */}
-      <section className="py-16 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="flex justify-between items-center mb-12">
-            <div>
-              <h2 className="text-3xl font-bold mb-2">Top Training Institutes</h2>
-              <p className="text-muted-foreground">Explore courses from verified maritime training institutes</p>
-            </div>
-          </div>
+      {/*<section className="py-16 bg-muted/30">*/}
+      {/*  <div className="container mx-auto px-4">*/}
+      {/*    <div className="flex justify-between items-center mb-12">*/}
+      {/*      <div>*/}
+      {/*        <h2 className="text-3xl font-bold mb-2">Top Training Institutes</h2>*/}
+      {/*        <p className="text-muted-foreground">Explore courses from verified maritime training institutes</p>*/}
+      {/*      </div>*/}
+      {/*    </div>*/}
 
-          {institutesLoading ? (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[1, 2, 3].map((i) => (
-                <Card key={i} className="overflow-hidden">
-                  <div className="h-32 bg-muted animate-pulse" />
-                  <CardContent className="p-6">
-                    <div className="h-4 bg-muted rounded animate-pulse mb-4" />
-                    <div className="h-3 bg-muted rounded animate-pulse" />
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : featuredInstitutes.length === 0 ? (
-            <div className="text-center py-12 bg-background rounded-lg border">
-              <Building2 className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-              <p className="text-lg font-medium mb-2">No institutes available yet</p>
-              <p className="text-muted-foreground">Check back soon for verified maritime training institutes</p>
-            </div>
-          ) : (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {featuredInstitutes.map((institute) => (
-                <Card
-                  key={institute.instid}
-                  className="overflow-hidden hover:shadow-lg transition-all cursor-pointer group"
-                  onClick={() => navigate(`/institute/${institute.instid}`)}
-                >
-                  <div className="relative h-32 overflow-hidden">
-                    {institute.banner_url ? (
-                      <img
-                        src={institute.banner_url}
-                        alt={`${institute.name} banner`}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-primary/20 to-accent/20" />
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
-                  </div>
+      {/*    {institutesLoading ? (*/}
+      {/*      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">*/}
+      {/*        {[1, 2, 3].map((i) => (*/}
+      {/*          <Card key={i} className="overflow-hidden">*/}
+      {/*            <div className="h-32 bg-muted animate-pulse" />*/}
+      {/*            <CardContent className="p-6">*/}
+      {/*              <div className="h-4 bg-muted rounded animate-pulse mb-4" />*/}
+      {/*              <div className="h-3 bg-muted rounded animate-pulse" />*/}
+      {/*            </CardContent>*/}
+      {/*          </Card>*/}
+      {/*        ))}*/}
+      {/*      </div>*/}
+      {/*    ) : featuredInstitutes.length === 0 ? (*/}
+      {/*      <div className="text-center py-12 bg-background rounded-lg border">*/}
+      {/*        <Building2 className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />*/}
+      {/*        <p className="text-lg font-medium mb-2">No institutes available yet</p>*/}
+      {/*        <p className="text-muted-foreground">Check back soon for verified maritime training institutes</p>*/}
+      {/*      </div>*/}
+      {/*    ) : (*/}
+      {/*      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">*/}
+      {/*        {featuredInstitutes.map((institute) => (*/}
+      {/*          <Card*/}
+      {/*            key={institute.instid}*/}
+      {/*            className="overflow-hidden hover:shadow-lg transition-all cursor-pointer group"*/}
+      {/*            onClick={() => navigate(`/institute/${institute.instid}`)}*/}
+      {/*          >*/}
+      {/*            <div className="relative h-32 overflow-hidden">*/}
+      {/*              {institute.banner_url ? (*/}
+      {/*                <img*/}
+      {/*                  src={institute.banner_url}*/}
+      {/*                  alt={`${institute.name} banner`}*/}
+      {/*                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"*/}
+      {/*                />*/}
+      {/*              ) : (*/}
+      {/*                <div className="w-full h-full bg-gradient-to-br from-primary/20 to-accent/20" />*/}
+      {/*              )}*/}
+      {/*              <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />*/}
+      {/*            </div>*/}
 
-                  <CardContent className="p-6 relative">
-                    <div className="absolute -top-8 left-6">
-                      <div className="h-16 w-16 rounded-lg bg-card border-4 border-background shadow-lg overflow-hidden flex items-center justify-center">
-                        {institute.logo_url ? (
-                          <img
-                            src={institute.logo_url}
-                            alt={`${institute.name} logo`}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <Building2 className="h-8 w-8 text-primary" />
-                        )}
-                      </div>
-                    </div>
+      {/*            <CardContent className="p-6 relative">*/}
+      {/*              <div className="absolute -top-8 left-6">*/}
+      {/*                <div className="h-16 w-16 rounded-lg bg-card border-4 border-background shadow-lg overflow-hidden flex items-center justify-center">*/}
+      {/*                  {institute.logo_url ? (*/}
+      {/*                    <img*/}
+      {/*                      src={institute.logo_url}*/}
+      {/*                      alt={`${institute.name} logo`}*/}
+      {/*                      className="h-full w-full object-cover"*/}
+      {/*                    />*/}
+      {/*                  ) : (*/}
+      {/*                    <Building2 className="h-8 w-8 text-primary" />*/}
+      {/*                  )}*/}
+      {/*                </div>*/}
+      {/*              </div>*/}
 
-                    <div className="mt-10">
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <h3 className="text-lg font-semibold line-clamp-2 group-hover:text-primary transition-colors flex-1">
-                          {institute.name}
-                        </h3>
-                        <Badge variant="outline" className="bg-green-50 border-green-200 text-green-700 shrink-0">
-                          <CheckCircle className="h-3 w-3 mr-1" />
-                          Verified
-                        </Badge>
-                      </div>
+      {/*              <div className="mt-10">*/}
+      {/*                <div className="flex items-start justify-between gap-2 mb-2">*/}
+      {/*                  <h3 className="text-lg font-semibold line-clamp-2 group-hover:text-primary transition-colors flex-1">*/}
+      {/*                    {institute.name}*/}
+      {/*                  </h3>*/}
+      {/*                  <Badge variant="outline" className="bg-green-50 border-green-200 text-green-700 shrink-0">*/}
+      {/*                    <CheckCircle className="h-3 w-3 mr-1" />*/}
+      {/*                    Verified*/}
+      {/*                  </Badge>*/}
+      {/*                </div>*/}
 
-                      {(institute.city || institute.state) && (
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground mb-3">
-                          <MapPin className="h-4 w-4" />
-                          <span className="line-clamp-1">
-                            {[institute.city, institute.state].filter(Boolean).join(', ')}
-                          </span>
-                        </div>
-                      )}
+      {/*                {(institute.city || institute.state) && (*/}
+      {/*                  <div className="flex items-center gap-1 text-sm text-muted-foreground mb-3">*/}
+      {/*                    <MapPin className="h-4 w-4" />*/}
+      {/*                    <span className="line-clamp-1">*/}
+      {/*                      {[institute.city, institute.state].filter(Boolean).join(', ')}*/}
+      {/*                    </span>*/}
+      {/*                  </div>*/}
+      {/*                )}*/}
 
-                      <div className="flex items-center justify-between pt-3 border-t">
-                        <div className="text-sm text-muted-foreground">
-                          <span className="font-semibold text-foreground">{institute.course_count}</span> {institute.course_count === 1 ? 'Course' : 'Courses'}
-                        </div>
-                        <Button variant="ghost" size="sm" className="gap-1 group-hover:gap-2 transition-all">
-                          View Details
-                          <ArrowRight className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
+      {/*                <div className="flex items-center justify-between pt-3 border-t">*/}
+      {/*                  <div className="text-sm text-muted-foreground">*/}
+      {/*                    <span className="font-semibold text-foreground">{institute.course_count}</span> {institute.course_count === 1 ? 'Course' : 'Courses'}*/}
+      {/*                  </div>*/}
+      {/*                  <Button variant="ghost" size="sm" className="gap-1 group-hover:gap-2 transition-all">*/}
+      {/*                    View Details*/}
+      {/*                    <ArrowRight className="h-4 w-4" />*/}
+      {/*                  </Button>*/}
+      {/*                </div>*/}
+      {/*              </div>*/}
+      {/*            </CardContent>*/}
+      {/*          </Card>*/}
+      {/*        ))}*/}
+      {/*      </div>*/}
+      {/*    )}*/}
+      {/*  </div>*/}
+      {/*</section>*/}
 
       {/* Featured Courses */}
       <section className="py-16">
